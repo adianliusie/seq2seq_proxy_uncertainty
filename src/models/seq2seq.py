@@ -1,6 +1,6 @@
 from transformers import T5ForConditionalGeneration
 
-def load_seq2seq_transformer(system:str):
+def load_seq2seq_transformer(system:str)->T5ForConditionalGeneration:
     """ downloads and returns the relevant pretrained seq2seq transformer from huggingface """
     if   system == 't5_small' : trans_model = T5ForConditionalGeneration.from_pretrained("t5-small", return_dict=True)
     elif system == 't5_base'  : trans_model = T5ForConditionalGeneration.from_pretrained("t5-base", return_dict=True)

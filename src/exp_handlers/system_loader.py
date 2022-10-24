@@ -10,15 +10,15 @@ from .trainer import Trainer
 from ..batchers.batcher import Batcher
 from ..utils.torch_utils import no_grad
 from ..utils.dir_helper import DirHelper
-from ..data_utils.data_loader import DataLoader
+from ..data_utils.data_handler import DataLoader
 from ..utils.evaluation import calc_acc, anneal_probs
 
-#== Class to load trained system and generate predictions ===================================#
+#== Class to load trained system and generate predictions =========================================#
 class SystemLoader(Trainer):
     """Base loader class- the inherited class inherits
        the Trainer so has all experiment methods"""
 
-    #== 'Set up Methods' to load the given path =============================================#
+    #== 'Set up Methods' to load the given path ===================================================#
     def __init__(self, exp_path:str, device=None):
         self.exp_path = exp_path
         self.dir = DirHelper.load_dir(exp_path)
@@ -37,9 +37,9 @@ class SystemLoader(Trainer):
         if not getattr(self, 'device', None): self.device = 'cuda:0'
         self.to(self.device)
 
-    #== Methods to load predictions/probabilities for given dataset =========================#
-    def load_preds(self, data_name:str, mode:str)->dict:
-        probs = self.load_probs(data_name, mode)
+    #== Methods to load predictions/probabilities for given dataset ===============================#
+    def generate_preds(self, data_name:str, mode:str)->dict:
+        preds = self.load_preds(data_name, mode)
         preds = {}
         for ex_id, probs in probs.items():
             preds[ex_id] = int(np.argmax(probs, axis=-1))  
@@ -52,10 +52,6 @@ class SystemLoader(Trainer):
             self.generate_probs(data_name, mode)
         probs = self.dir.load_probs(data_name, mode)
         
-        if calibrate:
-            labels = self.load_labels(data_name, mode)
-            probs  = anneal_probs(probs, labels, silent=False)
-            
         return probs
 
     def generate_probs(self, data_name:str, mode:str):
@@ -63,14 +59,14 @@ class SystemLoader(Trainer):
         self.dir.save_probs(probabilties, data_name, mode)
 
     @no_grad
-    def _probs(self, data_name:str, mode:str='test'):
+    def generate_preds(self, data_name:str, mode:str='test'):
         """get model predictions for given data"""
         self.model.eval()
         self.to(self.device)
         eval_data = self.data_loader.prep_split(data_name, mode)
         eval_batches = self.batcher(data=eval_data, bsz=1, shuffle=False)
         
-        probabilties = {}
+        output = {}
         for batch in tqdm(eval_batches):
             ex_id = batch.ex_id[0]
             output = self.model_output(batch)
@@ -81,7 +77,7 @@ class SystemLoader(Trainer):
             probabilties[ex_id] = prob.cpu().numpy()
         return probabilties
   
-    #== Methods to get hidden layer outputs =================================================#
+    #== Methods to get hidden layer outputs =======================================================#
     @lru_cache(maxsize=5)
     @no_grad
     def get_last_layer_repr(self, data_name:str=None, mode:str='test', lim:int=None):
@@ -122,7 +118,7 @@ class SystemLoader(Trainer):
         
         return output
         
-    #== Util Methods to enable easy access to data utils ====================================#
+    #== Util Methods to enable easy access to data utils ==========================================#
     @staticmethod
     def load_labels(data_name:str, mode:str='test', lim=None)->dict:
         eval_data = DataLoader.load_split(data_name, mode)

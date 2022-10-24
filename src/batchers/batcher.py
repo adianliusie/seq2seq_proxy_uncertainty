@@ -20,13 +20,15 @@ class Batcher:
   
     def batchify(self, batch:List[list])->SimpleNamespace:
         """each input is input ids and mask for utt, + label"""
-        ex_id, input_ids, label_ids = zip(*batch)  
+        ex_id, input_ids, label_ids, input_text, label_text = zip(*batch)  
         input_ids, attention_mask = self._get_padded_ids(input_ids)
         label_ids, _ = self._get_padded_ids(label_ids, pad_id=-100)
         return SimpleNamespace(ex_id=ex_id, 
                                input_ids=input_ids, 
                                attention_mask=attention_mask, 
-                               label_ids=label_ids)
+                               label_ids=label_ids,
+                               input_text=input_text,
+                               label_text=label_text)
     
     def _prep_examples(self, data:list)->List[list]:
         """ sequence classification input data preparation"""
@@ -35,17 +37,19 @@ class Batcher:
             ex_id = ex.ex_id
             input_ids = ex.input_ids
             label_ids = ex.label_ids
-            
+            input_text = ex.input_ids
+            label_text = ex.label_text
+
             # if ids larger than max size, then truncate
             if len(input_ids) > self.max_len: 
                 #input_ids = [input_ids[0]] + input_ids[-self.max_len+1:]
                 continue
 
-            prepped_examples.append([ex_id, input_ids, label_ids])
+            prepped_examples.append([ex_id, input_ids, label_ids, input_text, label_text])
         return prepped_examples 
 
-    #== Util methods ===============================================================================#
-    def _get_padded_ids(self, ids:list, pad_id:int=0)-> (torch.LongTensor, torch.LongTensor):
+    #== Util methods ==============================================================================#
+    def _get_padded_ids(self, ids:list, pad_id:int=0)-> Tuple[torch.LongTensor, torch.LongTensor]:
         """ pads 2D input ids arry so that every row has the same length """
         max_len = max([len(x) for x in ids])
         padded_ids = [x     + [pad_id]*(max_len-len(x)) for x in ids]

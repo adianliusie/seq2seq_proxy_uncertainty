@@ -55,6 +55,11 @@ def no_grad(func:Callable)->Callable:
             return func(*args, **kwargs)
     return inner
 
+def get_device(gpu = True):
+    """check if device is wanted and available"""
+    available = gpu and torch.cuda.is_available()
+    return torch.device('cuda' if available else 'cpu')
+    
 #== Logging utils ===========================================================
 def save_script_args():
     CMD = f"python {' '.join(sys.argv)}\n"
