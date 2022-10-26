@@ -1,6 +1,7 @@
 import os
 import argparse
 import pprint
+from statistics import mode
 
 from trainer import Trainer
 from utils.general import save_script_args
@@ -15,7 +16,7 @@ if __name__ == '__main__':
     model_parser.add_argument('--transformer', default='t5-base',type=str, help='[bert, roberta, electra ...]')
     model_parser.add_argument('--max-len', default=512, type=int, help='max length of transformer inputs')
     model_parser.add_argument('--seed', default=None, type=int, help='random seed')
-    model_args = model_parser.parse_args()
+    model_args, _ = model_parser.parse_known_args()
 
 
     ### Training arguments
@@ -31,11 +32,13 @@ if __name__ == '__main__':
 
     train_parser.add_argument('--loss', default='cross_entropy', type=str, help='loss function to use to train system')
     train_parser.add_argument('--wandb', default=None, type=str, help='experiment name to use for wandb (and to enable)')
-    train_args = train_parser.parse_args()
+    train_args, _ = train_parser.parse_known_args()
 
-
-    save_script_args()
-    pprint.pprint(model_args.__dict__), print()
+    # Save arguments
+    save_script_args(os.path.join(
+        model_args.path, 'CMD.log'
+    ))
+    # pprint.pprint(model_args.__dict__), print()
     # pprint.pprint(train_args.__dict__), print()
     
     # seed_path = model_args.exp_path+'/'+str(model_args.seed_num)

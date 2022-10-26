@@ -9,7 +9,7 @@ import torch
 from data.handler import DataHandler
 from batcher import Batcher
 from models.seq2seq import load_seq2seq_transformer 
-from utils.general import save_json, load_json, no_grad
+from utils.general import save_json, load_json
 from loss import load_model_loss
 
 
