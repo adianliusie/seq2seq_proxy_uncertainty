@@ -1,9 +1,9 @@
 import torch
 
-from ..utils.general import get_device
-from ..utils.meter import AverageMeter
+from utils.meter import AverageMeter
 
-class BaseLoss:
+
+class BaseLoss(object):
     def __init__(self):
         self.metrics = {}
 
@@ -17,7 +17,7 @@ class BaseLoss:
                 self.metrics[key] = AverageMeter()
             self.metrics[key].update(value, batch_size)
 
-    def forward(self, batch)->'loss':
+    def forward(self, batch):
         raise NotImplementedError
 
     @torch.no_grad()
