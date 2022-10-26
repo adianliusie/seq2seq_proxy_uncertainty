@@ -6,7 +6,7 @@ from typing import Optional, List, Dict
 from types import SimpleNamespace
 from functools import lru_cache
 
-from .models.tokenizers import load_tokenizer
+from models.tokenizers import load_tokenizer
 from .loader import load_nmt_data
 
 

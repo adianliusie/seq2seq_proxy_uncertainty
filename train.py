@@ -3,7 +3,7 @@ import argparse
 import pprint
 
 from trainer import Trainer
-from .utils.general import save_script_args
+from utils.general import save_script_args
 
 
 if __name__ == '__main__':
@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     ### Training arguments
     train_parser = argparse.ArgumentParser(description='Arguments for training the system')
-    train_parser.add_argument('--dataset', default='wmt16-de', type=str, help='dataset to train the system on')
+    train_parser.add_argument('--dataset', default='wmt16-en-de', type=str, help='dataset to train the system on')
     train_parser.add_argument('--datasubset', default=None, type=int, help='size of data subset to use for debugging')
     train_parser.add_argument('--log-every', default=50, type=int, help='logging training metrics every number of steps')
     train_parser.add_argument('--val-every', default=200, type=int, help='logging validation metrics every number of steps')
@@ -36,9 +36,9 @@ if __name__ == '__main__':
 
     save_script_args()
     pprint.pprint(model_args.__dict__), print()
-    pprint.pprint(train_args.__dict__), print()
+    # pprint.pprint(train_args.__dict__), print()
     
-    seed_path = model_args.exp_path+'/'+str(model_args.seed_num)
-    assert(not os.path.isdir(seed_path))
-    trainer = Trainer(seed_path, model_args)
-    trainer.train(train_args)
+    # seed_path = model_args.exp_path+'/'+str(model_args.seed_num)
+    # assert(not os.path.isdir(seed_path))
+    # trainer = Trainer(seed_path, model_args)
+    # trainer.train(train_args)

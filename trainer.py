@@ -6,8 +6,8 @@ from types import SimpleNamespace
 import wandb
 import torch
 
-from data_utils.data_handler import DataHandler
-from batchers.batcher import Batcher
+from data.handler import DataHandler
+from batcher import Batcher
 from models.seq2seq import load_seq2seq_transformer 
 from utils.general import save_json, load_json, no_grad
 from loss import load_model_loss
