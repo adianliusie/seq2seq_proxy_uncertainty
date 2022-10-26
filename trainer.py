@@ -1,10 +1,10 @@
-import wandb
-import torch
-import logging
 import os
-
+import logging
 from collections import namedtuple
 from types import SimpleNamespace
+
+import wandb
+import torch
 
 from .data_utils.data_handler import DataHandler
 from .batchers.batcher import Batcher

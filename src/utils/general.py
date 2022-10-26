@@ -7,27 +7,29 @@ import torch
 from typing import Callable
 from pathlib import Path
 
-#== File handling functions ================================================
-def save_json(data:dict, path:str):
-    with open(path, "x") as outfile:
-        json.dump(data, outfile, indent=2)
 
-def load_json(path:str)->dict:
-    with open(path) as jsonFile:
-        data = json.load(jsonFile)
-    return data
+def save_json(data: dict, path: str):
+    with open(path, "x") as file:
+        json.dump(data, file, indent = 2)
 
-def save_pickle(data, path:str):
-    with open(path, 'xb') as output:
-        pickle.dump(data, output)
 
-def load_pickle(path:str):
-    with open(path, 'rb') as pkl_file:
-        data = pickle.load(pkl_file)
-    return data
+def load_json(path: str):
+    with open(path) as file:
+        return json.load(file)
+
+
+def save_pickle(data, path: str):
+    with open(path, 'xb') as file:
+        pickle.dump(data, file)
+
+
+def load_pickle(path: str):
+    with open(path, 'rb') as file:
+        return pickle.load(file)
+
 
 #== Location utils ==========================================================
-def join_paths(base_path:str, relative_path:str):
+def join_paths(base_path: str, relative_path: str):
     path = os.path.join(base_path, relative_path)
     path = str(Path(path).resolve()) #convert base/x/x/../../src to base/src
     return path 
@@ -55,10 +57,8 @@ def no_grad(func:Callable)->Callable:
             return func(*args, **kwargs)
     return inner
 
-def get_device(gpu = True):
-    """check if device is wanted and available"""
-    available = gpu and torch.cuda.is_available()
-    return torch.device('cuda' if available else 'cpu')
+def get_device():
+    return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
 #== Logging utils ===========================================================
 def save_script_args():
