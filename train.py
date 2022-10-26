@@ -1,12 +1,11 @@
-import argparse
 import os
+import argparse
 import shutil
 import pprint
 
-#from src.trainers.trainer import Trainer
-from src.exp_handlers.trainer import Trainer
+from .trainer import Trainer
+from .utils.general import save_script_args
 
-from src.utils.general import save_script_args
 
 #== ArgParse for Model details =====================================================================
 model_parser = argparse.ArgumentParser(description='Arguments for system and model configuration')
@@ -22,6 +21,7 @@ model_parser.add_argument('--num_seeds',   default=1,           type=int,  help=
 
 model_parser.add_argument('--seed_num',   default=None,         type=int,  help='if an extra seed is to be trained')
 model_parser.add_argument('--force',      action='store_true',            help='if set, will overwrite any existing directory')
+
 
 #== ArgParse for Training details ==================================================================
 train_parser = argparse.ArgumentParser(description='Arguments for training the system')
@@ -42,6 +42,7 @@ train_parser.add_argument('--wandb',   default=None,             type=str,  help
 train_parser.add_argument('--device',  default='cuda',           type=str,  help='device to use [cuda, cpu]')
 
 train_parser.add_argument('--no_save', action='store_false', dest='save', help='whether to not save model')
+
 
 #== Main script ====================================================================================
 if __name__ == '__main__':

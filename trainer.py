@@ -6,12 +6,12 @@ import os
 from collections import namedtuple
 from types import SimpleNamespace
 
-from ..data_utils.data_handler import DataHandler
-from ..batchers.batcher import Batcher
-from ..utils.dir_helper import DirHelper
-from ..models.seq2seq import load_seq2seq_transformer 
-from ..utils.general import save_json, load_json, no_grad
-from ..loss import load_model_loss
+from .data_utils.data_handler import DataHandler
+from .batchers.batcher import Batcher
+from .utils.dir_helper import DirHelper
+from .models.seq2seq import load_seq2seq_transformer 
+from .utils.general import save_json, load_json, no_grad
+from .loss import load_model_loss
 
 class Trainer():
     """"base class for finetuning transformer to datasets"""
