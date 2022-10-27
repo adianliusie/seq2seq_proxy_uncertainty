@@ -1,20 +1,20 @@
-import torch
-import torch.nn as nn
-from types import SimpleNamespace
+from transformers import T5ForConditionalGeneration
 
-from ..utils.torch_utils import load_transformer
 
-class TransformerModel(torch.nn.Module):
-    """basic transformer model for multi-class classification""" 
-    def __init__(self, trans_name:str, num_classes:int=2):
-        super().__init__()
-        self.transformer = load_transformer(trans_name)
-        h_size = self.transformer.config.hidden_size
-        self.output_head = nn.Linear(h_size, num_classes)
-        
-    def forward(self, *args, **kwargs):
-        trans_output = self.transformer(*args, **kwargs)
-        H = trans_output.last_hidden_state  #[bsz, L, 768] 
-        h = H[:, 0]                         #[bsz, 768] 
-        logits = self.output_head(h)             #[bsz, C] 
-        return SimpleNamespace(h=h, logits=logits)
+__all__ = [
+    "load_model"
+]
+
+
+def load_model(system: str) -> T5ForConditionalGeneration:
+    """
+    Downloads and returns the relevant pretrained seq2seq transformer from huggingface
+    """
+    if system == 't5-small':
+        return T5ForConditionalGeneration.from_pretrained("t5-small", return_dict = True)
+    elif system == 't5-base': 
+        return T5ForConditionalGeneration.from_pretrained("t5-base", return_dict = True)
+    elif system == 't5-large': 
+        return T5ForConditionalGeneration.from_pretrained("t5-large", return_dict = True)
+    raise ValueError("{} is an invalid system: no seq2seq model found".format(system))
+

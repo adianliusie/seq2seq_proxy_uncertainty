@@ -14,7 +14,7 @@ if __name__ == '__main__':
     model_parser = argparse.ArgumentParser(description='Arguments for system and model configuration')
     model_parser.add_argument('--path', type=str, help='path to experiment')
     model_parser.add_argument('--transformer', default='t5-base',type=str, help='[bert, roberta, electra ...]')
-    model_parser.add_argument('--max-len', default=512, type=int, help='max length of transformer inputs')
+    model_parser.add_argument('--maxlen', default=512, type=int, help='max length of transformer inputs')
     model_parser.add_argument('--seed', default=None, type=int, help='random seed')
     model_args, _ = model_parser.parse_known_args()
 
@@ -35,9 +35,9 @@ if __name__ == '__main__':
     train_args, _ = train_parser.parse_known_args()
 
     # Save arguments
-    save_script_args(os.path.join(
-        model_args.path, 'CMD.log'
-    ))
+    save_script_args(os.path.join(model_args.path, 'CMD.log'))
+
+    
     # pprint.pprint(model_args.__dict__), print()
     # pprint.pprint(train_args.__dict__), print()
     
