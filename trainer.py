@@ -1,3 +1,4 @@
+from genericpath import isdir
 import os
 import logging
 from collections import namedtuple
@@ -8,9 +9,17 @@ import torch
 
 from data.handler import DataHandler
 from batcher import Batcher
-from models.transformer import load_seq2seq_transformer 
+from models.models import load_model 
 from utils.general import save_json, load_json
 from loss import load_loss
+
+
+# Creat Logger
+logging.basicConfig(
+    format='%(asctime)s %(levelname)-8s %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class Trainer(object):
@@ -25,19 +34,18 @@ class Trainer(object):
         self.model_args = args
         self.data_handler = DataHandler(name=args.transformer)
         self.batcher = Batcher(maxlen=args.maxlen)
-        self.model = load_seq2seq_transformer(system=args.transformer)
+        self.model = load_model(system=args.transformer)
 
     def train(self, args:namedtuple):
         self.save_args('train_args.json', args)
         if args.wandb: 
             self.setup_wandb(args)
  
-        train, dev, test = self.data_handler.prep_data(args.data_set, args.lim)
+        train, dev, test = self.data_handler.prep_data(args.dataset, args.datasubset)
 
         optimizer = torch.optim.AdamW(
             self.model.parameters(), 
-            lr=args.lr, 
-            eps=args.epsilon
+            lr=args.lr 
         )
         #scheduler = ...
 
@@ -51,11 +59,10 @@ class Trainer(object):
         self.device = args.device
         self.to(self.device)
         
-        for epoch in range(args.epochs):
-
+        for epoch in range(20):
             self.model.train()
             self.model_loss.reset_metrics()
-            trainloader = self.batcher(data=train, bsz=args.bsz, shuffle=True)
+            trainloader = self.batcher(data=train, numtokens=args.num_tokens, shuffle=True)
             
             for step, batch in enumerate(trainloader, start=1):
                 loss = self.model_loss(batch)
@@ -66,15 +73,15 @@ class Trainer(object):
                 # scheduler.step()
 
                 # Print train performance every log_every samples
-                if step % (args.log_every // args.bsz) == 0:
+                if step % args.log_every == 0:
                     metrics = self.log_metrics(mode='train', step=step, lr=args.lr)
                     if args.wandb: 
                         self.log_wandb(metrics, mode='train')
 
                 # Validation performance
-                if step % (args.val_every//args.bsz) == 0:   
+                if step % args.val_every == 0:   
                     self.model_loss.reset_metrics()     
-                    devloader = self.batcher(data=dev, bsz=args.bsz, shuffle=False)
+                    devloader = self.batcher(data=dev, numtokens=args.num_tokens, shuffle=False)
                     for batch in devloader:
                         self.model_loss.eval_forward(batch)
                     
@@ -102,7 +109,7 @@ class Trainer(object):
 
         for key, value in metrics.items():
             msg += '{}: {:.3f} '.format(key, value)
-        self.logger.info(msg)
+        logger.info(msg)
 
         self.model_loss.reset_metrics()   
         return metrics
@@ -114,11 +121,11 @@ class Trainer(object):
 
     def setup_exp(self, exp_path: str, args: namedtuple):
         self.exp_path = exp_path
-        self.logger = self.set_logger()
 
-        self.logger.info("Creating experiment folder")
-        os.makedirs(self.exp_path)
-        os.mkdir(os.path.join(self.exp_path, 'models'))
+        if not os.path.isdir(self.exp_path):
+            logger.info("Creating experiment folder")
+            os.makedirs(self.exp_path)
+            os.mkdir(os.path.join(self.exp_path, 'models'))
 
         self.save_args('model_args.json', args)
 
@@ -134,14 +141,6 @@ class Trainer(object):
         args = load_json(path)
         return SimpleNamespace(**args)
     
-    def set_logger(self):
-        logging.basicConfig(
-            format='%(asctime)s %(levelname)-8s %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S',
-            level=logging.INFO)
-        logger = logging.getLogger(__name__)
-        return logger
-
     def save_model(self, name : str = 'base'):
         # Get current model device
         device = next(self.model.parameters()).device
