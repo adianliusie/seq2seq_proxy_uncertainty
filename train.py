@@ -33,7 +33,7 @@ if __name__ == '__main__':
     train_parser.add_argument('--val-every', default=200, type=int, help='logging validation metrics every number of steps')
 
     train_parser.add_argument('--num-steps', default=10000, type=int, help='number of updates to train for')
-    train_parser.add_argument('--num-warmup-steps', default=1000, type=int, help='number of updates to train for')
+    train_parser.add_argument('--num-warmup-steps', default=1000, type=int, help='number of warmup updates linearly increasing learning rate to train for')
     train_parser.add_argument('--num-tokens', default=1024, type=int, help='number of tokens in a batch')
     train_parser.add_argument('--lr', default=1e-5, type=float, help='initial learning rate')
 
