@@ -1,6 +1,7 @@
-from genericpath import isdir
 import os
 import logging
+
+from itertools import cycle
 from collections import namedtuple
 from types import SimpleNamespace
 
@@ -37,64 +38,95 @@ class Trainer(object):
         self.model = load_model(system=args.transformer)
 
     def train(self, args:namedtuple):
-        self.save_args('train_args.json', args)
+
+        # Save arguments for future reference and quick loading
+        self.save_args('train-args.json', args)
+
+        # Setup wandb for online tracking of experiments
         if args.wandb: 
             self.setup_wandb(args)
  
+        # Get train, val, test split of data
         train, dev, test = self.data_handler.prep_data(args.dataset, args.datasubset)
 
+        # All experiments will use the adam-w optimizer
         optimizer = torch.optim.AdamW(
             self.model.parameters(), 
-            lr=args.lr 
+            lr=args.lr,
         )
-        #scheduler = ...
 
+        # We use a triangular finetuning schedule
+        def lr_lambda(step):
+            if step < args.num_warmup_steps:
+                return step / args.num_warmup_steps
+            return (args.num_steps - step) / (args.num_steps - args.num_warmup_steps)
+        
+        # Setup scheduler
+        scheduler = torch.optim.lr_scheduler.LambdaLR(
+            optimizer,
+            lr_lambda,
+        )
+
+        # The the loss function which takes in the model
         self.model_loss = load_loss(
             loss=args.loss,
             args=args,
             model=self.model,
         )
 
+        # Store the best metrics shere
         best_metric = {}
-        self.device = args.device
-        self.to(self.device)
-        
-        for epoch in range(20):
-            self.model.train()
-            self.model_loss.reset_metrics()
-            trainloader = self.batcher(data=train, numtokens=args.num_tokens, shuffle=True)
-            
-            for step, batch in enumerate(trainloader, start=1):
-                loss = self.model_loss(batch)
 
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-                # scheduler.step()
+        # Device management
+        self.to(args.device)
 
-                # Print train performance every log_every samples
-                if step % args.log_every == 0:
-                    metrics = self.log_metrics(mode='train', step=step, lr=args.lr)
-                    if args.wandb: 
-                        self.log_wandb(metrics, mode='train')
+        # Setup model for translation
+        self.model.train()
 
-                # Validation performance
-                if step % args.val_every == 0:   
-                    self.model_loss.reset_metrics()     
-                    devloader = self.batcher(data=dev, numtokens=args.num_tokens, shuffle=False)
-                    for batch in devloader:
-                        self.model_loss.eval_forward(batch)
+        # Reset loss metrics
+        self.model_loss.reset_metrics()
+
+        # Create batched dataset
+        trainloader = self.batcher(data = train, numtokens = args.num_tokens, shuffle = True)
+
+        for step, batch in enumerate(cycle(trainloader), start = 1):
+
+            # Perform forward pass
+            loss = self.model_loss(batch)
+
+            # Perform backward pass
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            scheduler.step()
+
+            # Print train performance every log_every samples
+            if step % args.log_every == 0:
+                metrics = self.log_metrics(mode='train', step=step, lr=args.lr)
+                if args.wandb: 
+                    self.log_wandb(metrics, mode='train')
+
+            # Validation performance
+            if step % args.val_every == 0:   
+                self.model_loss.reset_metrics()     
+                devloader = self.batcher(data=dev, numtokens=args.num_tokens, shuffle=False)
+                for batch in devloader:
+                    self.model_loss.eval_forward(batch)
                     
-                    metrics = self.log_metrics(mode='dev')
-                    if args.wandb: 
-                        self.log_wandb(metrics, mode='dev')
+                metrics = self.log_metrics(mode='dev')
+                if args.wandb: 
+                    self.log_wandb(metrics, mode='dev')
 
-                    # Save performance if best dev performance 
-                    if metrics['loss'] < best_metric.get('loss', float('inf')):
-                        best_metric = metrics.copy()
-                        self.save_model()
+                # Save performance if best dev performance 
+                if metrics['loss'] < best_metric.get('loss', float('inf')):
+                    best_metric = metrics.copy()
+                    self.save_model()
                     
-                    self.log_metrics(mode='best_dev', metrics=best_metric)
+                self.log_metrics(mode='best-dev', metrics=best_metric)
+
+            # Stop training at breaking point
+            if step >= args.num_steps:
+                break
 
     def log_metrics(self, mode: str = 'train', step: int = None, lr: float = None, metrics = None):
         if metrics is None:
@@ -104,7 +136,7 @@ class Trainer(object):
             msg = 'iteration:{:<6}  lr: {:.5f}  '.format(step, lr)
         elif mode == 'dev': 
             msg = 'dev       |||  '
-        elif mode == 'best_dev': 
+        elif mode == 'best-dev': 
             msg = 'best dev  |||  '
 
         for key, value in metrics.items():
