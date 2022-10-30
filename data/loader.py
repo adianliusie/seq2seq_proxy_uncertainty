@@ -12,6 +12,9 @@ __all__ = [
 def load_nmt_data(dname: str = 'wmt16-en-de'):
     if dname == 'wmt16-en-de': 
         return load_wmt16(lang = 'de')
+    if dname == 'newscommentary-en-de':
+        return load_newscommentary(lang = 'de')
+    
     raise ValueError("Invalid dataset name: {}".format(dname))
                        
 
@@ -33,8 +36,18 @@ def load_wmt16(lang: str = 'de'):
     """
     Loads wmt16-de-en data from huggingface
     """
-    data = load_dataset("wmt16", "{}-en".format(lang))
+    data = load_dataset(f"wmt16", "{lang}-en")
     train, dev, test = data['train'], data['validation'], data['test']
     train, dev, test = [format_wmt16(split, lang) for split in [train, dev, test]]
     return train, dev, test
- 
+
+
+def load_newscommentary(lang: str = 'de'):
+    """
+    Loads news_commentary-de-en data from huggingface
+    """
+    data = load_dataset(f"news_commentary", "lang{}-en")
+    adata = load_dataset(f"wmt16", "{lang}-en")
+    train, dev, test = data['train'], adata['validation'], adata['test']
+    train, dev, test = [format_wmt16(split, lang) for split in [train, dev, test]]
+    return train, dev, test

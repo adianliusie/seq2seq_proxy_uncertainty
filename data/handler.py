@@ -53,8 +53,8 @@ class DataHandler(object):
             
         if lim is not None:
             train = subset(train, lim)
-            dev   = subset(dev, lim)
-            test  = subset(test, lim)
+            dev = subset(dev, lim)
+            test = subset(test, lim)
             
         train, dev, test = to_namespace(train, dev, test)
         return train, dev, test
