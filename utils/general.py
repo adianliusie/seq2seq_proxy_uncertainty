@@ -13,7 +13,7 @@ __all__ = [
 
 
 def save_json(data: dict, path: str):
-    with open(path, "x") as file:
+    with open(path, "w+") as file:
         json.dump(data, file, indent = 2)
 
 
@@ -23,7 +23,7 @@ def load_json(path: str):
 
 
 def save_pickle(data, path: str):
-    with open(path, 'xb') as file:
+    with open(path, 'wb') as file:
         pickle.dump(data, file)
 
 

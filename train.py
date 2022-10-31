@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     ### Training arguments
     train_parser = argparse.ArgumentParser(description='Arguments for training the system')
-    train_parser.add_argument('--dataset', default='news-com-en-de', type=str, help='dataset to train the system on')
+    train_parser.add_argument('--dataset', default='newscommentary-en-de', type=str, help='dataset to train the system on')
     train_parser.add_argument('--datasubset', default=None, type=int, help='size of data subset to use for debugging')
     train_parser.add_argument('--log-every', default=50, type=int, help='logging training metrics every number of steps')
     train_parser.add_argument('--val-every', default=200, type=int, help='logging validation metrics every number of steps')
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     train_parser.add_argument('--lr', default=1e-5, type=float, help='initial learning rate')
 
     train_parser.add_argument('--loss', default='cross_entropy', type=str, help='loss function to use to train system')
-    train_parser.add_argument('--wandb', default=None, type=str, help='experiment name to use for wandb (and to enable)')
+    train_parser.add_argument('--wandb', action='store_true',    help='if set, will log to wandb')
     train_parser.add_argument('--device', default='cuda', type=str, help='selecting device to use')
 
     train_args, other_args_2 = train_parser.parse_known_args()

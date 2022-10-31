@@ -36,7 +36,7 @@ def load_wmt16(lang: str = 'de'):
     """
     Loads wmt16-de-en data from huggingface
     """
-    data = load_dataset(f"wmt16", "{lang}-en")
+    data = load_dataset("wmt16", "{}-en".format(lang))
     train, dev, test = data['train'], data['validation'], data['test']
     train, dev, test = [format_wmt16(split, lang) for split in [train, dev, test]]
     return train, dev, test
@@ -46,8 +46,8 @@ def load_newscommentary(lang: str = 'de'):
     """
     Loads news_commentary-de-en data from huggingface
     """
-    data = load_dataset(f"news_commentary", "lang{}-en")
-    adata = load_dataset(f"wmt16", "{lang}-en")
+    data = load_dataset(f"news_commentary", "{}-en".format(lang))
+    adata = load_dataset(f"wmt16", "{}-en".format(lang))
     train, dev, test = data['train'], adata['validation'], adata['test']
     train, dev, test = [format_wmt16(split, lang) for split in [train, dev, test]]
     return train, dev, test

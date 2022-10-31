@@ -198,22 +198,21 @@ class Trainer(object):
         self.batcher.to(device)
 
     def setup_wandb(self, args: namedtuple):
+        group_name = self.exp_path.split('-v')[0]
         wandb.init(
-            project=args.wandb, 
+            project='proxy-uncertainty-{}'.format(args.dataset),
             entity='mg-speech-group',
-            name=self.dir.exp_name, 
-            group=self.dir.base_name, 
-            dir=self.dir.abs_path, 
-            reinit=True
+            name=self.exp_path, 
+            group=group_name 
         )
 
         # save experiment config details
         cfg = {
-            'epochs': args.epochs,
-            'bsz': args.bsz,
+            'dataset': args.dataset,
+            'num_tokens': args.num_tokens,
             'lr': args.lr,
             'transformer': self.model_args.transformer,
-            'dataset': args.data_set,
+            'dataset': args.dataset,
         }
 
         wandb.config.update(cfg) 

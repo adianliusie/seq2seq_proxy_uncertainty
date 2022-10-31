@@ -67,7 +67,7 @@ class DataHandler(object):
     
     @lru_cache(maxsize = 5)
     def prep_data(self, dname, lim: Optional[int] = None):
-        train, dev, test = self.load_data(data_name = dname, lim = lim)
+        train, dev, test = self.load_data(dname = dname, lim = lim)
         train, dev, test = [self._prep_ids(split) for split in [train, dev, test]]
         return train, dev, test
         
