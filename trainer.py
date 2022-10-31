@@ -37,7 +37,7 @@ class Trainer(object):
         self.batcher = Batcher(maxlen=args.maxlen)
         self.model = load_model(system=args.transformer)
 
-    def train(self, args:namedtuple):
+    def train(self, args: namedtuple):
 
         # Save arguments for future reference and quick loading
         self.save_args('train-args.json', args)
@@ -75,7 +75,7 @@ class Trainer(object):
         )
 
         # Store the best metrics shere
-        best_metric = {}
+        self.best_metric = {'dev': {}, 'test': {}}
 
         # Device management
         self.to(args.device)
@@ -89,44 +89,74 @@ class Trainer(object):
         # Create batched dataset
         trainloader = self.batcher(data = train, numtokens = args.num_tokens, shuffle = True)
 
-        for step, batch in enumerate(cycle(trainloader), start = 1):
+        for step, batch in enumerate(cycle(trainloader), start = 0):
 
+            # Reset optimizer every n steps
+            if step % args.num_gradient_accum == 0:
+                optimizer.zero_grad()
+            
             # Perform forward pass
-            loss = self.model_loss(batch)
+            loss = self.model_loss(batch) / args.num_gradient_accum
 
             # Perform backward pass
-            optimizer.zero_grad()
             loss.backward()
-            optimizer.step()
-            scheduler.step()
+
+            # Update optimizer and scheduler learning rates
+            if (step + 1) % args.num_gradient_accum == 0:
+                optimizer.step()
+                scheduler.step()
+
 
             # Print train performance every log_every samples
-            if step % args.log_every == 0:
-                metrics = self.log_metrics(mode='train', step=step, lr=args.lr)
-                if args.wandb: 
-                    self.log_wandb(metrics, mode='train')
+            if step % (args.log_every * args.num_gradient_accum) == 0:
+                metrics = self.log_metrics(
+                    mode = 'train', 
+                    step = (step + 1) // args.num_gradient_accum, 
+                    lr = scheduler.get_last_lr()[0],
+                )
+                self.log_wandb(args, metrics, mode='train')
+
 
             # Validation performance
-            if step % args.val_every == 0:   
-                self.model_loss.reset_metrics()     
-                devloader = self.batcher(data=dev, numtokens=args.num_tokens, shuffle=False)
-                for batch in devloader:
-                    self.model_loss.eval_forward(batch)
-                    
-                metrics = self.log_metrics(mode='dev')
-                if args.wandb: 
-                    self.log_wandb(metrics, mode='dev')
-
-                # Save performance if best dev performance 
-                if metrics['loss'] < best_metric.get('loss', float('inf')):
-                    best_metric = metrics.copy()
-                    self.save_model()
-                    
-                self.log_metrics(mode='best-dev', metrics=best_metric)
+            if step % (args.val_every * args.num_gradient_accum) == 0:  
+                self.validate(args, dev, mode = 'dev')
+                self.validate(args, test, mode = 'test')
 
             # Stop training at breaking point
-            if step >= args.num_steps:
+            if step >= args.num_steps * args.num_gradient_accum:
                 break
+
+    def validate(self, args, data, mode):
+
+        # Ensure correct mode
+        assert mode in ['dev', 'test']
+
+        # Reset metrics for dev performance
+        self.model_loss.reset_metrics()
+
+        # Create new dev dataset  
+        loader = self.batcher(
+            data = data, 
+            numtokens = args.num_tokens, 
+            shuffle = False
+        )
+
+        # Save metrics for all the dataset
+        for batch in loader:
+            self.model_loss.eval_forward(batch)
+        
+        # Record metrics
+        metrics = self.log_metrics(mode = mode)
+        self.log_wandb(args, metrics, mode = mode)
+
+        # Save performance if best dev performance 
+        if metrics['loss'] < self.best_metric[mode].get('loss', float('inf')):
+            self.best_metric[mode] = metrics.copy()
+            self.save_model()
+        
+        # Best dev performance so far
+        self.log_metrics(mode=f'best-{mode}', metrics=self.best_metric[mode])
+
 
     def log_metrics(self, mode: str = 'train', step: int = None, lr: float = None, metrics = None):
         if metrics is None:
@@ -138,6 +168,10 @@ class Trainer(object):
             msg = 'dev       |||  '
         elif mode == 'best-dev': 
             msg = 'best dev  |||  '
+        elif mode == 'test': 
+            msg = 'test      |||  '
+        elif mode == 'best-test': 
+            msg = 'best test |||  '
 
         for key, value in metrics.items():
             msg += '{}: {:.3f} '.format(key, value)
@@ -146,7 +180,9 @@ class Trainer(object):
         self.model_loss.reset_metrics()   
         return metrics
 
-    def log_wandb(self, metrics, mode):
+    def log_wandb(self, args, metrics, mode):
+        if not args.wandb:
+            return 
         if mode == 'dev': 
             metrics = {'dev_{}'.format(key): value for key, value in metrics.items()}
         wandb.log(metrics)

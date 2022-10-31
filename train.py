@@ -22,7 +22,7 @@ if __name__ == '__main__':
     model_parser.add_argument('--transformer', default='t5-base',type=str, help='[bert, roberta, electra ...]')
     model_parser.add_argument('--maxlen', default=512, type=int, help='max length of transformer inputs')
     model_parser.add_argument('--seed', default=None, type=int, help='random seed')
-    model_args, other_args_1 = model_parser.parse_known_args()
+    model_args, moargs = model_parser.parse_known_args()
 
 
     ### Training arguments
@@ -32,6 +32,7 @@ if __name__ == '__main__':
     train_parser.add_argument('--log-every', default=50, type=int, help='logging training metrics every number of steps')
     train_parser.add_argument('--val-every', default=200, type=int, help='logging validation metrics every number of steps')
 
+    train_parser.add_argument('--num-gradient-accum', default=1, type=int, help='number of gradient accumululations')
     train_parser.add_argument('--num-steps', default=10000, type=int, help='number of updates to train for')
     train_parser.add_argument('--num-warmup-steps', default=1000, type=int, help='number of warmup updates linearly increasing learning rate to train for')
     train_parser.add_argument('--num-tokens', default=1024, type=int, help='number of tokens in a batch')
@@ -41,11 +42,10 @@ if __name__ == '__main__':
     train_parser.add_argument('--wandb', action='store_true',    help='if set, will log to wandb')
     train_parser.add_argument('--device', default='cuda', type=str, help='selecting device to use')
 
-    train_args, other_args_2 = train_parser.parse_known_args()
+    train_args, toargs = train_parser.parse_known_args()
 
-    # make sure no unkown arguments are given
-    # TODO: Do we need this?
-    assert set(other_args_1).isdisjoint(other_args_2), f"{set(other_args_1) & set(other_args_2)}"
+    # Making sure no unkown arguments are given
+    assert set(moargs).isdisjoint(toargs), f"{set(moargs) & set(toargs)}"
 
     # Save arguments
     #save_script_args(os.path.join(model_args.path, 'CMD.log'))
