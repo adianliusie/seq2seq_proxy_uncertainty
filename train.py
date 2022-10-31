@@ -21,7 +21,6 @@ if __name__ == '__main__':
     model_parser.add_argument('--path', type=str, help='path to experiment')
     model_parser.add_argument('--transformer', default='t5-base',type=str, help='[bert, roberta, electra ...]')
     model_parser.add_argument('--maxlen', default=512, type=int, help='max length of transformer inputs')
-    model_parser.add_argument('--seed', default=None, type=int, help='random seed')
     model_args, moargs = model_parser.parse_known_args()
 
 
@@ -47,9 +46,6 @@ if __name__ == '__main__':
 
     # Making sure no unkown arguments are given
     assert set(moargs).isdisjoint(toargs), f"{set(moargs) & set(toargs)}"
-
-    # Save arguments
-    #save_script_args(os.path.join(model_args.path, 'CMD.log'))
 
     logger.info(model_args.__dict__)
     logger.info(train_args.__dict__)

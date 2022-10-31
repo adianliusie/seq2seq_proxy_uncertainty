@@ -38,7 +38,7 @@ class Trainer(object):
         self.model = load_model(system=args.transformer)
 
     def train(self, args: namedtuple):
-
+        
         # Save arguments for future reference and quick loading
         self.save_args('train-args.json', args)
 
@@ -50,6 +50,7 @@ class Trainer(object):
         train, dev, test = self.data_handler.prep_data(args.dataset, args.datasubset)
 
         # All experiments will use the adam-w optimizer
+        logger.info("Building optimizer")
         optimizer = torch.optim.AdamW(
             self.model.parameters(), 
             lr=args.lr,
@@ -62,17 +63,34 @@ class Trainer(object):
             return (args.num_steps - step) / (args.num_steps - args.num_warmup_steps)
         
         # Setup scheduler
+        logger.info("Building sheduler")
         scheduler = torch.optim.lr_scheduler.LambdaLR(
             optimizer,
             lr_lambda,
         )
 
         # The the loss function which takes in the model
+        logger.info("Building loss")
         self.model_loss = load_loss(
             loss=args.loss,
             args=args,
             model=self.model,
+            tokenizer=self.data_handler.tokenizer,
         )
+
+        # Number of parameters
+        logger.info("Number of parameters in model {:.1f}M".format(
+            sum(p.numel() for p in self.model.parameters()) / 1e6
+        ))
+        logger.info("Number of parameters in model encoder {:.1f}M".format(
+            sum(p.numel() for p in self.model.encoder.parameters()) / 1e6
+        ))
+        logger.info("Number of parameters in model decoder {:.1f}M".format(
+            sum(p.numel() for p in self.model.decoder.parameters()) / 1e6
+        ))
+        logger.info("Number of parameters in model head {:.1f}M".format(
+            sum(p.numel() for p in self.model.lm_head.parameters()) / 1e6
+        ))
 
         # Store the best metrics shere
         self.best_metric = {'dev': {}, 'test': {}}
@@ -94,6 +112,7 @@ class Trainer(object):
             shuffle = True
         )
 
+        logger.info("Starting Train")
         for step, batch in enumerate(cycle(trainloader), start = 0):
 
             # Reset optimizer every n steps
@@ -194,7 +213,9 @@ class Trainer(object):
         if not args.wandb:
             return 
         if mode == 'dev': 
-            metrics = {'dev_{}'.format(key): value for key, value in metrics.items()}
+            metrics = {'dev-{}'.format(key): value for key, value in metrics.items()}
+        if mode == 'test': 
+            metrics = {'test-{}'.format(key): value for key, value in metrics.items()}
         wandb.log(metrics)
 
     def setup_exp(self, exp_path: str, args: namedtuple):
@@ -223,7 +244,7 @@ class Trainer(object):
         args = load_json(path)
         return SimpleNamespace(**args)
     
-    def save_model(self, name : str = 'base'):
+    def save_model(self):
         # Get current model device
         device = next(self.model.parameters()).device
         
@@ -231,12 +252,10 @@ class Trainer(object):
         self.model.to("cpu")
 
         # Save path
-        path = os.path.join(self.exp_path, 'models', f'{name}.pt')
+        path = os.path.join(self.exp_path, 'models', f'{self.model_args.transformer}.pt')
 
-        torch.save(
-            self.model.state_dict(),
-            path,
-        )
+        # Save model dict
+        torch.save(self.model.state_dict(), path)
 
         # Return to original device
         self.model.to(device)

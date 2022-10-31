@@ -77,8 +77,8 @@ class Batcher(object):
 
             examples.append([ex_id, input_ids, label_ids, input_text, label_text])
 
-        # Sort all examples based on length
-        examples = sorted(examples, key = lambda x: len(x[1]), reverse=True)
+        # Sort all examples based on average length
+        examples = sorted(examples, key = lambda x: len(x[1]) + len(x[2]), reverse=True)
 
         return examples 
 
