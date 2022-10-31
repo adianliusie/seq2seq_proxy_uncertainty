@@ -27,6 +27,14 @@ class CrossEntropyLoss(BaseLoss):
         self.record_metrics({
             'loss': loss.item(),
             'ce': loss.item(),
-        })
+        }, batch_size = batch.output_numtokens)
+
+        self.record_metrics({
+            'num-sequences': batch.input_ids.size(0),
+            'ip-num-tokens': batch.input_numtokens,
+            'ip-num-padding': batch.input_numpadding,
+            'op-num-tokens': batch.output_numtokens,
+            'op-num-padding': batch.output_numpadding,
+        }, batch_size = 1)
 
         return loss
