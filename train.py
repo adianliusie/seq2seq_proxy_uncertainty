@@ -35,7 +35,8 @@ if __name__ == '__main__':
     train_parser.add_argument('--num-gradient-accum', default=1, type=int, help='number of gradient accumululations')
     train_parser.add_argument('--num-steps', default=10000, type=int, help='number of updates to train for')
     train_parser.add_argument('--num-warmup-steps', default=1000, type=int, help='number of warmup updates linearly increasing learning rate to train for')
-    train_parser.add_argument('--num-tokens', default=1024, type=int, help='number of tokens in a batch')
+    train_parser.add_argument('--num-tokens', default=1024, type=int, help='max number of tokens in a batch')
+    train_parser.add_argument('--num-sequences', default=1000, type=int, help='max number of sequences in a batch')
     train_parser.add_argument('--lr', default=1e-5, type=float, help='initial learning rate')
 
     train_parser.add_argument('--loss', default='cross_entropy', type=str, help='loss function to use to train system')
@@ -50,8 +51,8 @@ if __name__ == '__main__':
     # Save arguments
     #save_script_args(os.path.join(model_args.path, 'CMD.log'))
 
-    logger.info(model_args.__dict__), print()
-    logger.info(train_args.__dict__), print()
+    logger.info(model_args.__dict__)
+    logger.info(train_args.__dict__)
     
     trainer = Trainer(model_args.path, model_args)
     trainer.train(train_args)

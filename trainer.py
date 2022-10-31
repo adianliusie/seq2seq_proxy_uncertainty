@@ -87,7 +87,12 @@ class Trainer(object):
         self.model_loss.reset_metrics()
 
         # Create batched dataset
-        trainloader = self.batcher(data = train, numtokens = args.num_tokens, shuffle = True)
+        trainloader = self.batcher(
+            data = train, 
+            numtokens = args.num_tokens, 
+            numsequences = args.num_sequences, 
+            shuffle = True
+        )
 
         for step, batch in enumerate(cycle(trainloader), start = 0):
 
@@ -96,10 +101,10 @@ class Trainer(object):
                 optimizer.zero_grad()
             
             # Perform forward pass
-            loss = self.model_loss(batch) / args.num_gradient_accum
+            loss = self.model_loss(batch)
 
             # Perform backward pass
-            loss.backward()
+            (loss / args.num_gradient_accum).backward()
 
             # Update optimizer and scheduler learning rates
             if (step + 1) % args.num_gradient_accum == 0:
@@ -108,7 +113,7 @@ class Trainer(object):
 
 
             # Print train performance every log_every samples
-            if step % (args.log_every * args.num_gradient_accum) == 0:
+            if (step + 1) % (args.log_every * args.num_gradient_accum) == 0:
                 metrics = self.log_metrics(
                     mode = 'train', 
                     step = (step + 1) // args.num_gradient_accum, 
@@ -118,7 +123,7 @@ class Trainer(object):
 
 
             # Validation performance
-            if step % (args.val_every * args.num_gradient_accum) == 0:  
+            if (step + 1) % (args.val_every * args.num_gradient_accum) == 0:  
                 self.validate(args, dev, mode = 'dev')
                 self.validate(args, test, mode = 'test')
 
@@ -126,6 +131,7 @@ class Trainer(object):
             if step >= args.num_steps * args.num_gradient_accum:
                 break
 
+    @torch.no_grad()
     def validate(self, args, data, mode):
 
         # Ensure correct mode
@@ -138,6 +144,7 @@ class Trainer(object):
         loader = self.batcher(
             data = data, 
             numtokens = args.num_tokens, 
+            numsequences = args.num_sequences, 
             shuffle = False
         )
 
@@ -163,7 +170,7 @@ class Trainer(object):
             metrics = {key: value.avg for key, value in self.model_loss.metrics.items()}
 
         if mode == 'train': 
-            msg = 'iteration:{:<6}  lr: {:.5f}  '.format(step, lr)
+            msg = 'iteration:{:<6}  lr: {:.7f}  '.format(step, lr)
         elif mode == 'dev': 
             msg = 'dev       |||  '
         elif mode == 'best-dev': 
@@ -174,7 +181,10 @@ class Trainer(object):
             msg = 'best test |||  '
 
         for key, value in metrics.items():
-            msg += '{}: {:.3f} '.format(key, value)
+            if key in ['num-']:
+                msg += '{}: {:.0f} '.format(key, value)
+            else:
+                msg += '{}: {:.3f} '.format(key, value)
         logger.info(msg)
 
         self.model_loss.reset_metrics()   
@@ -193,7 +203,11 @@ class Trainer(object):
         if not os.path.isdir(self.exp_path):
             logger.info("Creating experiment folder")
             os.makedirs(self.exp_path)
-            os.mkdir(os.path.join(self.exp_path, 'models'))
+        
+        mod_path = os.path.join(self.exp_path, 'models')
+        if not os.path.isdir(mod_path):
+            logger.info("Creating experiment-model folder")
+            os.makedirs(mod_path)
 
         self.save_args('model_args.json', args)
 
@@ -215,9 +229,13 @@ class Trainer(object):
         
         # Save in cpu mode
         self.model.to("cpu")
+
+        # Save path
+        path = os.path.join(self.exp_path, 'models', f'{name}.pt')
+
         torch.save(
             self.model.state_dict(),
-            os.path.join(self.exp_path, 'models', '{}.pt'.format(name))
+            path,
         )
 
         # Return to original device
