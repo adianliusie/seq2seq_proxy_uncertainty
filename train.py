@@ -31,12 +31,12 @@ if __name__ == '__main__':
     train_parser.add_argument('--log-every', default=50, type=int, help='logging training metrics every number of steps')
     train_parser.add_argument('--val-every', default=200, type=int, help='logging validation metrics every number of steps')
 
-    train_parser.add_argument('--num-gradient-accum', default=1, type=int, help='number of gradient accumululations')
-    train_parser.add_argument('--num-steps', default=10000, type=int, help='number of updates to train for')
-    train_parser.add_argument('--num-warmup-steps', default=1000, type=int, help='number of warmup updates linearly increasing learning rate to train for')
+    train_parser.add_argument('--num-gradient-accum', default=8, type=int, help='number of gradient accumululations')
+    train_parser.add_argument('--num-steps', default=10_000, type=int, help='number of updates to train for')
+    train_parser.add_argument('--num-warmup-steps', default=2000, type=int, help='number of warmup updates linearly increasing learning rate to train for')
     train_parser.add_argument('--num-tokens', default=1024, type=int, help='max number of tokens in a batch')
-    train_parser.add_argument('--num-sequences', default=1000, type=int, help='max number of sequences in a batch')
-    train_parser.add_argument('--lr', default=1e-5, type=float, help='initial learning rate')
+    train_parser.add_argument('--num-sequences', default=30, type=int, help='max number of sequences in a batch')
+    train_parser.add_argument('--lr', default=1e-4, type=float, help='initial learning rate')
 
     train_parser.add_argument('--loss', default='cross_entropy', type=str, help='loss function to use to train system')
     train_parser.add_argument('--wandb', action='store_true',    help='if set, will log to wandb')
