@@ -4,6 +4,7 @@ import logging
 from itertools import cycle
 from collections import namedtuple
 from types import SimpleNamespace
+from typing import Optional
 
 import wandb
 import torch
@@ -150,6 +151,46 @@ class Trainer(object):
             if step >= args.num_steps * args.num_gradient_accum:
                 break
 
+    def decode(self, args: namedtuple):
+        
+        # Get train, val, test split of data
+        _, _, test = self.data_handler.prep_data(args.dataset, args.datasubset)
+
+        # Load model
+        self.load_model()
+
+        # Number of parameters
+        logger.info("Number of parameters in model {:.1f}M".format(
+            sum(p.numel() for p in self.model.parameters()) / 1e6
+        ))
+        logger.info("Number of parameters in model encoder {:.1f}M".format(
+            sum(p.numel() for p in self.model.encoder.parameters()) / 1e6
+        ))
+        logger.info("Number of parameters in model decoder {:.1f}M".format(
+            sum(p.numel() for p in self.model.decoder.parameters()) / 1e6
+        ))
+        logger.info("Number of parameters in model head {:.1f}M".format(
+            sum(p.numel() for p in self.model.lm_head.parameters()) / 1e6
+        ))
+
+        # Device management
+        self.to(args.device)
+
+        # Setup model for translation
+        self.model.eval()
+
+        # Create batched dataset
+        testloader = self.batcher(
+            data = test, 
+            numtokens = args.num_tokens, 
+            numsequences = args.num_sequences, 
+            shuffle = False
+        )
+
+        logger.info("Starting Decode")
+        for step, batch in enumerate(testloader, start = 0):
+            pass
+
     @torch.no_grad()
     def validate(self, args, data, mode):
 
@@ -182,7 +223,6 @@ class Trainer(object):
         
         # Best dev performance so far
         self.log_metrics(mode=f'best-{mode}', metrics=self.best_metric[mode])
-
 
     def log_metrics(self, mode: str = 'train', step: int = None, lr: float = None, metrics = None):
         if metrics is None:
@@ -260,7 +300,8 @@ class Trainer(object):
         # Return to original device
         self.model.to(device)
 
-    def load_model(self, name: str = 'base'):
+    def load_model(self, name: Optional[str] = None):
+        name = name if name is not None else self.model_args.transformer
         self.model.load_state_dict(
             os.path.join(self.exp_path, 'models', '{}.pt'.format(name))
         )
