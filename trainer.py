@@ -312,7 +312,11 @@ class Trainer(object):
         self.batcher.to(device)
 
     def setup_wandb(self, args: namedtuple):
-        group_name = self.exp_path.split('-v')[0]
+        #group name is everything before the final 'vi' and after 'checkpoints/'
+        group_name = '-v'.join(self.exp_path.split('-v')[:-1])
+        group_name = group_name.replace('checkpoints/', '')
+
+        #init wandb project
         wandb.init(
             project='proxy-uncertainty-{}'.format(args.dataset),
             entity='mg-speech-group',
