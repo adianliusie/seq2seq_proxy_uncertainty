@@ -44,10 +44,6 @@ class Trainer(object):
         
         # Save arguments for future reference and quick loading
         self.save_args('train-args.json', args)
-
-        # Setup wandb for online tracking of experiments
-        if args.wandb: 
-            self.setup_wandb(args)
  
         # Get train, val, test split of data
         train, dev, test = self.data_handler.prep_data(args.dataset, args.datasubset)
@@ -114,6 +110,10 @@ class Trainer(object):
             numsequences = args.num_sequences, 
             shuffle = True
         )
+
+        # Setup wandb for online tracking of experiments
+        if args.wandb: 
+            self.setup_wandb(args)
 
         logger.info("Starting Train")
         for step, batch in enumerate(cycle(trainloader), start = 0):
@@ -222,7 +222,7 @@ class Trainer(object):
             [[p['ref'] for p in pred]],
         ).score
         logger.info("Finished Decode")
-        logger.info("Sacrebleu performance: {score}")
+        logger.info(f"Sacrebleu performance: {score}")
 
     @torch.no_grad()
     def validate(self, args, data, mode):
