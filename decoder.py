@@ -37,8 +37,8 @@ if __name__ == '__main__':
     decode_parser.add_argument('--num-beams', default=12, type=int, help='number of beams')
     # decode_parser.add_argument('--num-beam-groups', default=3, type=int, help='number of groups of beams')
     # decode_parser.add_argument('--diversity-penalty', default=0.0, type=float, help='penalizing similarity between groups')
-    decode_parser.add_argument('--length-penalty', default=1.0, type=float, help='penalizing shorter sequences for larger values')
-    decode_parser.add_argument('--no-repeat-ngram-size', default=0, type=int, help='no repeating n gram')
+    decode_parser.add_argument('--length-penalty', default=0.6, type=float, help='penalizing shorter sequences for larger values')
+    decode_parser.add_argument('--no-repeat-ngram-size', default=5, type=int, help='no repeating n gram')
     decode_args, toargs = decode_parser.parse_known_args()
 
     # Making sure no unkown arguments are given

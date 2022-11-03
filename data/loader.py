@@ -1,6 +1,8 @@
 from typing import List, Dict
 from tqdm import tqdm
 
+import os
+
 from datasets import load_dataset
 
 
@@ -14,10 +16,14 @@ def load_nmt_data(dname: str = 'wmt16-en-de'):
         return load_wmt16(lang = 'de')
     if dname == 'newscommentary-en-de':
         return load_newscommentary(lang = 'de')
-    if dname == 'newscommentary-en-de-dev':
-        return load_newscommentary_dev(lang = 'de')
-    if dname == 'newscommentary-en-de-test':
-        return load_newscommentary_test(lang = 'de')
+    if dname == 'newstest13':
+        return load_newstest13(lang = 'de')
+    if dname == 'newstest14':
+        return load_newstest14(lang = 'de')
+    if dname == 'newstest15':
+        return load_newstest15(lang = 'de')
+    if dname == 'newstest16':
+        return load_newstest16(lang = 'de')
     
     raise ValueError("Invalid dataset name: {}".format(dname))
                        
@@ -57,21 +63,66 @@ def load_newscommentary(lang: str = 'de'):
     return train, dev, test
 
 
-def load_newscommentary_dev(lang: str = 'de'):
-    """
-    Loads news_commentary-de-en-dev data from huggingface
-    """
-    adata = load_dataset(f"wmt16", "{}-en".format(lang))
-    dev = adata['validation']
-    dev = format_wmt16(dev, lang)
-    return dev
+def format_newstest(src, ref):
+    output = []
+    for (src_sent, ref_sent) in zip(src, ref):
+        output.append({
+            'input_text': src_sent.strip("\n"), 
+            'label_text': ref_sent.strip("\n"),
+        })
+    return output
 
 
-def load_newscommentary_test(lang: str = 'de'):
+def load_newstest13(lang: str = 'de'):
     """
-    Loads news_commentary-de-en-test data from huggingface
+    Loads newstest-13 en-de data from huggingface
     """
-    adata = load_dataset(f"wmt16", "{}-en".format(lang))
-    test = adata['test']
-    test = format_wmt16(test, lang)
-    return test
+    path = "/rds/project/rds-8YSp2LXTlkY/data/nmt-newstest/dev/text"
+    with open(os.path.join(path, "newstest2013-src.en.sgm.text"), "r") as f:
+        src = f.readlines()
+    with open(os.path.join(path, "newstest2013-ref.de.sgm.text"), "r") as f:
+        ref = f.readlines()
+
+    output = format_newstest(src, ref)
+    return output
+
+
+def load_newstest14(lang: str = 'de'):
+    """
+    Loads newstest-14 en-de data from huggingface
+    """
+    path = "/rds/project/rds-8YSp2LXTlkY/data/nmt-newstest/dev/text"
+    with open(os.path.join(path, "newstest2014-deen-src.en.sgm.text"), "r") as f:
+        src = f.readlines()
+    with open(os.path.join(path, "newstest2014-deen-ref.de.sgm.text"), "r") as f:
+        ref = f.readlines()
+
+    output = format_newstest(src, ref)
+    return output
+
+
+def load_newstest15(lang: str = 'de'):
+    """
+    Loads newstest-15 en-de data from huggingface
+    """
+    path = "/rds/project/rds-8YSp2LXTlkY/data/nmt-newstest/dev/text"
+    with open(os.path.join(path, "newstest2015-ende-src.en.sgm.text"), "r") as f:
+        src = f.readlines()
+    with open(os.path.join(path, "newstest2015-ende-ref.de.sgm.text"), "r") as f:
+        ref = f.readlines()
+
+    output = format_newstest(src, ref)
+    return output
+
+def load_newstest16(lang: str = 'de'):
+    """
+    Loads newstest-16 en-de data from huggingface
+    """
+    path = "/rds/project/rds-8YSp2LXTlkY/data/nmt-newstest/dev/text"
+    with open(os.path.join(path, "newstest2016-ende-src.en.sgm.text"), "r") as f:
+        src = f.readlines()
+    with open(os.path.join(path, "newstest2016-ende-ref.de.sgm.text"), "r") as f:
+        ref = f.readlines()
+
+    output = format_newstest(src, ref)
+    return output
