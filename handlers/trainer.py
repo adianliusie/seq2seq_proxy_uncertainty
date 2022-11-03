@@ -9,10 +9,9 @@ from tqdm import tqdm
 
 import wandb
 import torch
-import sacrebleu
 
 from data.handler import DataHandler
-from batcher import Batcher
+from handlers.batcher import Batcher
 from models.models import load_model 
 from utils.general import save_json, load_json
 from loss import load_loss
@@ -41,19 +40,16 @@ class Trainer(object):
         self.model = load_model(system=args.transformer)
 
     def train(self, args: namedtuple):
-        
         # Save arguments for future reference and quick loading
         self.save_args('train-args.json', args)
  
-        # Get train, val, test split of data
-        train, dev, test = self.data_handler.prep_data(args.dataset, args.datasubset)
-
         # All experiments will use the adam-w optimizer
         logger.info("Building optimizer")
         optimizer = torch.optim.AdamW(
             self.model.parameters(), 
             lr=args.lr,
         )
+        optimizer.zero_grad()
 
         # We use a triangular finetuning schedule
         def lr_lambda(step):
@@ -68,7 +64,7 @@ class Trainer(object):
             lr_lambda,
         )
 
-        # The the loss function which takes in the model
+        # set up loss function for training
         logger.info("Building loss")
         self.model_loss = load_loss(
             loss=args.loss,
@@ -77,31 +73,21 @@ class Trainer(object):
             tokenizer=self.data_handler.tokenizer,
         )
 
-        # Number of parameters
-        logger.info("Number of parameters in model {:.1f}M".format(
-            sum(p.numel() for p in self.model.parameters()) / 1e6
-        ))
-        logger.info("Number of parameters in model encoder {:.1f}M".format(
-            sum(p.numel() for p in self.model.encoder.parameters()) / 1e6
-        ))
-        logger.info("Number of parameters in model decoder {:.1f}M".format(
-            sum(p.numel() for p in self.model.decoder.parameters()) / 1e6
-        ))
-        logger.info("Number of parameters in model head {:.1f}M".format(
-            sum(p.numel() for p in self.model.lm_head.parameters()) / 1e6
-        ))
+        # Print number of model parameters
+        self.log_num_params()
 
         # Store the best metrics shere
         self.best_metric = {'dev': {}, 'test': {}}
 
-        # Device management
-        self.to(args.device)
-
         # Setup model for translation
+        self.to(args.device)
         self.model.train()
 
         # Reset loss metrics
         self.model_loss.reset_metrics()
+
+        # Get train, val, test split of data
+        train, dev, test = self.data_handler.prep_data(args.dataset, args.datasubset)
 
         # Create batched dataset
         trainloader = self.batcher(
@@ -116,12 +102,7 @@ class Trainer(object):
             self.setup_wandb(args)
 
         logger.info("Starting Train")
-        for step, batch in enumerate(cycle(trainloader), start = 0):
-
-            # Reset optimizer every n steps
-            if step % args.num_gradient_accum == 0:
-                optimizer.zero_grad()
-            
+        for step, batch in enumerate(trainloader, start = 1):
             # Perform forward pass
             loss = self.model_loss(batch)
 
@@ -129,13 +110,13 @@ class Trainer(object):
             (loss / args.num_gradient_accum).backward()
 
             # Update optimizer and scheduler learning rates
-            if (step + 1) % args.num_gradient_accum == 0:
+            if step % args.num_gradient_accum == 0:
                 optimizer.step()
                 scheduler.step()
-
+                optimizer.zero_grad()
 
             # Print train performance every log_every samples
-            if (step + 1) % (args.log_every * args.num_gradient_accum) == 0:
+            if step % (args.log_every * args.num_gradient_accum) == 0:
                 metrics = self.log_metrics(
                     mode = 'train', 
                     step = (step + 1) // args.num_gradient_accum, 
@@ -143,90 +124,16 @@ class Trainer(object):
                 )
                 self.log_wandb(args, metrics, mode='train')
 
-
             # Validation performance
-            if (step + 1) % (args.val_every * args.num_gradient_accum) == 0:  
-                self.validate(args, dev, mode = 'dev')
+            if step % (args.val_every * args.num_gradient_accum) == 0:  
                 self.validate(args, test, mode = 'test')
 
             # Stop training at breaking point
             if step >= args.num_steps * args.num_gradient_accum:
                 break
 
-    def decode(self, args: namedtuple):
-        
-        # Get dataset
-        data = self.data_handler.prep_data_single(args.dataset, args.datasubset)
-
-        # Load model
-        self.load_model()
-
-        # Device management
-        self.to(args.device)
-
-        # Setup model for translation
-        self.model.eval()
-
-        # Number of parameters
-        logger.info("Number of parameters in model {:.1f}M".format(
-            sum(p.numel() for p in self.model.parameters()) / 1e6
-        ))
-        logger.info("Number of parameters in model encoder {:.1f}M".format(
-            sum(p.numel() for p in self.model.encoder.parameters()) / 1e6
-        ))
-        logger.info("Number of parameters in model decoder {:.1f}M".format(
-            sum(p.numel() for p in self.model.decoder.parameters()) / 1e6
-        ))
-        logger.info("Number of parameters in model head {:.1f}M".format(
-            sum(p.numel() for p in self.model.lm_head.parameters()) / 1e6
-        ))
-
-        # Create batched dataset
-        dataloader = self.batcher(
-            data = data, 
-            numtokens = args.num_tokens, 
-            numsequences = args.num_sequences, 
-            shuffle = False
-        )
-
-        # Save all predictions
-        pred = []
-
-        logger.info("Starting Decode")
-        for batch in tqdm(dataloader):
-            
-            # Generate prediction
-            output = self.model.generate(
-                input_ids = batch.input_ids, 
-                attention_mask = batch.attention_mask, 
-                max_length = args.decode_max_length,
-                num_beams = args.num_beams,
-                length_penalty = args.length_penalty,
-                no_repeat_ngram_size = args.no_repeat_ngram_size,
-            )
-
-            for i, out, ref in zip(batch.ex_id, output, batch.label_text):
-                # Tokenzier decode one sample at a time
-                out = self.data_handler.tokenizer.decode(out)
-                out = out[:out.index('</s>')]
-
-                # Save all decoded outputs
-                pred.append({
-                    'id': i, 
-                    'ref': ref, 
-                    'out': out
-                })
-
-        score = sacrebleu.corpus_bleu(
-            [p['out'] for p in pred],
-            [[p['ref'] for p in pred]],
-        ).score
-        logger.info("Finished Decode")
-        logger.info(f"Sacrebleu performance: {score}")
-
     @torch.no_grad()
     def validate(self, args, data, mode):
-
         # Ensure correct mode
         assert mode in ['dev', 'test']
 
@@ -263,14 +170,8 @@ class Trainer(object):
 
         if mode == 'train': 
             msg = 'iteration:{:<6}  lr: {:.7f}  '.format(step, lr)
-        elif mode == 'dev': 
-            msg = 'dev       |||  '
-        elif mode == 'best-dev': 
-            msg = 'best dev  |||  '
-        elif mode == 'test': 
-            msg = 'test      |||  '
-        elif mode == 'best-test': 
-            msg = 'best test |||  '
+        elif mode in ['dev', 'best-dev', 'test', 'best-test']: 
+            msg = '{:<15}  |||  '.format(mode)
 
         for key, value in metrics.items():
             if key in ['num-']:
@@ -340,6 +241,21 @@ class Trainer(object):
                 os.path.join(self.exp_path, 'models', '{}.pt'.format(name))
             )
         )
+
+    def log_num_params(self):
+        """ prints number of paramers in model """
+        logger.info("Number of parameters in model {:.1f}M".format(
+            sum(p.numel() for p in self.model.parameters()) / 1e6
+        ))
+        logger.info("Number of parameters in model encoder {:.1f}M".format(
+            sum(p.numel() for p in self.model.encoder.parameters()) / 1e6
+        ))
+        logger.info("Number of parameters in model decoder {:.1f}M".format(
+            sum(p.numel() for p in self.model.decoder.parameters()) / 1e6
+        ))
+        logger.info("Number of parameters in model head {:.1f}M".format(
+            sum(p.numel() for p in self.model.lm_head.parameters()) / 1e6
+        ))
 
     def to(self, device):
         assert hasattr(self, 'model') and hasattr(self, 'batcher')

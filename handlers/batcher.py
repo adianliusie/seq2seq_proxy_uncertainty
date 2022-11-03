@@ -24,10 +24,12 @@ class Batcher(object):
         Splits the data into batches and returns them
         """
         examples = self._prepare(data)
-    
+
+        # Sort all examples based on average length
+        examples = sorted(examples, key = lambda x: len(x[1]) + len(x[2]), reverse=True)
+
         batches, step = [], 0
         while step < len(examples):
-
             # Dynamic batch size based on max tokens in target sequence
             bsz = min(numtokens // len(examples[step][2]), numsequences)
 
@@ -40,10 +42,10 @@ class Batcher(object):
 
             # Update step
             step += bsz
-        
+
         if return_last:
             batches.append(examples[step:])
-
+        
         if shuffle: 
             random.shuffle(batches)
 
@@ -84,13 +86,10 @@ class Batcher(object):
             label_text = ex.label_text
 
             # Skip all examples larger than limit
-            if len(input_ids) > self.maxlen: 
+            if len(input_ids) > self.maxlen or len(ex.label_ids) > self.maxlen: 
                 continue
 
             examples.append([ex_id, input_ids, label_ids, input_text, label_text])
-
-        # Sort all examples based on average length
-        examples = sorted(examples, key = lambda x: len(x[1]) + len(x[2]), reverse=True)
 
         return examples 
 

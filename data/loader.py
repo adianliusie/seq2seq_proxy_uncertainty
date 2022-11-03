@@ -10,29 +10,13 @@ __all__ = [
     "load_nmt_data",
 ]
 
-
 def load_nmt_data(dname: str = 'wmt16-en-de'):
     if dname == 'wmt16-en-de': 
         return load_wmt16(lang = 'de')
     if dname == 'newscommentary-en-de':
         return load_newscommentary(lang = 'de')
-    if dname == 'newstest13':
-        return load_newstest13(lang = 'de')
-    if dname == 'newstest14':
-        return load_newstest14(lang = 'de')
-    if dname == 'newstest15':
-        return load_newstest15(lang = 'de')
-    if dname == 'newstest16':
-        return load_newstest16(lang = 'de')
-    if dname == 'newstest17':
-        return load_newstest17(lang = 'de')
-    if dname == 'newstest18':
-        return load_newstest18(lang = 'de')
-    if dname == 'newstest19':
-        return load_newstest19(lang = 'de')
-    if dname == 'newstest20':
-        return load_newstest20(lang = 'de')
-    
+    if 'newstest' in dname:
+        return load_newstest(dname = dname)
     raise ValueError("Invalid dataset name: {}".format(dname))
                        
 
@@ -80,96 +64,20 @@ def format_newstest(src, ref):
         })
     return output
 
-
-def load_newstest(path_src: str, path_ref: str):
+def load_newstest(dname: str):
     """
     Loads generic newstest en-de data from huggingface
+    input loads newstest2014, newstest2015 ... newstest2020
     """
-    path = "/rds/project/rds-8YSp2LXTlkY/data/nmt-newstest/dev/text"
-    with open(os.path.join(path, path_src), "r") as f:
+    base_path = "/rds/project/rds-8YSp2LXTlkY/data/nmt-newstest/dev/text"
+
+    src_path = "{}-ende-src.en.sgm.text".format(dname)
+    ref_path = "{}-ende-src.en.sgm.text".format(dname)
+    base_path = "/rds/project/rds-8YSp2LXTlkY/data/nmt-newstest/dev/text"
+    with open(os.path.join(base_path, src_path), "r") as f:
         src = f.readlines()
-    with open(os.path.join(path, path_ref), "r") as f:
+    with open(os.path.join(base_path, ref_path), "r") as f:
         ref = f.readlines()
 
     output = format_newstest(src, ref)
-    return output
-
-
-def load_newstest13(lang: str = 'de'):
-    """
-    Loads newstest-13 en-de data from huggingface
-    """
-    return load_newstest(
-        "newstest2013-src.en.sgm.text",
-        "newstest2013-ref.de.sgm.text",
-    )
-
-
-def load_newstest14(lang: str = 'de'):
-    """
-    Loads newstest-14 en-de data from huggingface
-    """
-    return load_newstest(
-        "newstest2014-deen-src.en.sgm.text",
-        "newstest2014-deen-ref.de.sgm.text",
-    )
-
-
-def load_newstest15(lang: str = 'de'):
-    """
-    Loads newstest-15 en-de data from huggingface
-    """
-    return load_newstest(
-        "newstest2015-ende-src.en.sgm.text",
-        "newstest2015-ende-ref.de.sgm.text",
-    )
-
-
-def load_newstest16(lang: str = 'de'):
-    """
-    Loads newstest-16 en-de data from huggingface
-    """
-    return load_newstest(
-        "newstest2016-ende-src.en.sgm.text",
-        "newstest2016-ende-ref.de.sgm.text",
-    )
-
-
-def load_newstest17(lang: str = 'de'):
-    """
-    Loads newstest-17 en-de data from huggingface
-    """
-    return load_newstest(
-        "newstest2017-ende-src.en.sgm.text",
-        "newstest2017-ende-ref.de.sgm.text",
-    )
-
-
-def load_newstest18(lang: str = 'de'):
-    """
-    Loads newstest-18 en-de data from huggingface
-    """
-    return load_newstest(
-        "newstest2018-ende-src.en.sgm.text",
-        "newstest2018-ende-ref.de.sgm.text",
-    )
-
-
-def load_newstest19(lang: str = 'de'):
-    """
-    Loads newstest-19 en-de data from huggingface
-    """
-    return load_newstest(
-        "newstest2019-ende-src.en.sgm.text",
-        "newstest2019-ende-ref.de.sgm.text",
-    )
-
-
-def load_newstest20(lang: str = 'de'):
-    """
-    Loads newstest-20 en-de data from huggingface
-    """
-    return load_newstest(
-        "newstest2020-ende-src.en.sgm.text",
-        "newstest2020-ende-ref.de.sgm.text",
-    )
+    return output, output, output

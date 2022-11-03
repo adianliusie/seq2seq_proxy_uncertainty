@@ -3,7 +3,7 @@ import argparse
 import logging
 from statistics import mode
 
-from trainer import Trainer
+from handlers.evaluater import Evaluator
 from utils.general import save_script_args
 
 # Load logger
@@ -15,17 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 if __name__ == '__main__':
-
-    # Model arguments
-    model_parser = argparse.ArgumentParser(description='Arguments for system and model configuration')
-    model_parser.add_argument('--path', type=str, help='path to experiment')
-    model_parser.add_argument('--transformer', default='t5-base',type=str, help='[bert, roberta, electra ...]')
-    model_parser.add_argument('--maxlen', default=512, type=int, help='max length of transformer inputs')
-    model_args, moargs = model_parser.parse_known_args()
-
-
     ### Decoding arguments
     decode_parser = argparse.ArgumentParser(description='Arguments for training the system')
+    decode_parser.add_argument('--path', type=str, help='path to experiment')
     decode_parser.add_argument('--dataset', default='newscommentary-en-de-test', type=str, help='dataset to train the system on')
     decode_parser.add_argument('--datasubset', default=None, type=int, help='size of data subset to use for debugging')
 
@@ -39,13 +31,9 @@ if __name__ == '__main__':
     # decode_parser.add_argument('--diversity-penalty', default=0.0, type=float, help='penalizing similarity between groups')
     decode_parser.add_argument('--length-penalty', default=0.6, type=float, help='penalizing shorter sequences for larger values')
     decode_parser.add_argument('--no-repeat-ngram-size', default=5, type=int, help='no repeating n gram')
-    decode_args, toargs = decode_parser.parse_known_args()
+    decode_args = decode_parser.parse_args()
 
-    # Making sure no unkown arguments are given
-    assert set(moargs).isdisjoint(toargs), f"{set(moargs) & set(toargs)}"
-
-    logger.info(model_args.__dict__)
     logger.info(decode_args.__dict__)
     
-    trainer = Trainer(model_args.path, model_args)
-    trainer.decode(decode_args)
+    evaluator = Evaluator(decode_args.path)
+    evaluator.decode(decode_args)

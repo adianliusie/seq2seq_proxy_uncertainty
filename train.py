@@ -3,7 +3,7 @@ import argparse
 import logging
 from statistics import mode
 
-from trainer import Trainer
+from handlers.trainer import Trainer
 from utils.general import save_script_args
 
 # Load logger
