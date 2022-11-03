@@ -24,6 +24,14 @@ def load_nmt_data(dname: str = 'wmt16-en-de'):
         return load_newstest15(lang = 'de')
     if dname == 'newstest16':
         return load_newstest16(lang = 'de')
+    if dname == 'newstest17':
+        return load_newstest17(lang = 'de')
+    if dname == 'newstest18':
+        return load_newstest18(lang = 'de')
+    if dname == 'newstest19':
+        return load_newstest19(lang = 'de')
+    if dname == 'newstest20':
+        return load_newstest20(lang = 'de')
     
     raise ValueError("Invalid dataset name: {}".format(dname))
                        
@@ -114,6 +122,7 @@ def load_newstest15(lang: str = 'de'):
     output = format_newstest(src, ref)
     return output
 
+
 def load_newstest16(lang: str = 'de'):
     """
     Loads newstest-16 en-de data from huggingface
@@ -122,6 +131,62 @@ def load_newstest16(lang: str = 'de'):
     with open(os.path.join(path, "newstest2016-ende-src.en.sgm.text"), "r") as f:
         src = f.readlines()
     with open(os.path.join(path, "newstest2016-ende-ref.de.sgm.text"), "r") as f:
+        ref = f.readlines()
+
+    output = format_newstest(src, ref)
+    return output
+
+
+def load_newstest17(lang: str = 'de'):
+    """
+    Loads newstest-17 en-de data from huggingface
+    """
+    path = "/rds/project/rds-8YSp2LXTlkY/data/nmt-newstest/dev/text"
+    with open(os.path.join(path, "newstest2017-ende-src.en.sgm.text"), "r") as f:
+        src = f.readlines()
+    with open(os.path.join(path, "newstest2017-ende-ref.de.sgm.text"), "r") as f:
+        ref = f.readlines()
+
+    output = format_newstest(src, ref)
+    return output
+
+
+def load_newstest18(lang: str = 'de'):
+    """
+    Loads newstest-18 en-de data from huggingface
+    """
+    path = "/rds/project/rds-8YSp2LXTlkY/data/nmt-newstest/dev/text"
+    with open(os.path.join(path, "newstest2018-ende-src.en.sgm.text"), "r") as f:
+        src = f.readlines()
+    with open(os.path.join(path, "newstest2018-ende-ref.de.sgm.text"), "r") as f:
+        ref = f.readlines()
+
+    output = format_newstest(src, ref)
+    return output
+
+
+def load_newstest19(lang: str = 'de'):
+    """
+    Loads newstest-19 en-de data from huggingface
+    """
+    path = "/rds/project/rds-8YSp2LXTlkY/data/nmt-newstest/dev/text"
+    with open(os.path.join(path, "newstest2019-ende-src.en.sgm.text"), "r") as f:
+        src = f.readlines()
+    with open(os.path.join(path, "newstest2019-ende-ref.de.sgm.text"), "r") as f:
+        ref = f.readlines()
+
+    output = format_newstest(src, ref)
+    return output
+
+
+def load_newstest20(lang: str = 'de'):
+    """
+    Loads newstest-20 en-de data from huggingface
+    """
+    path = "/rds/project/rds-8YSp2LXTlkY/data/nmt-newstest/dev/text"
+    with open(os.path.join(path, "newstest2020-ende-src.en.sgm.text"), "r") as f:
+        src = f.readlines()
+    with open(os.path.join(path, "newstest2020-ende-ref.de.sgm.text"), "r") as f:
         ref = f.readlines()
 
     output = format_newstest(src, ref)
