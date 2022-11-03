@@ -71,6 +71,13 @@ class DataHandler(object):
         train, dev, test = [self._prep_ids(split) for split in [train, dev, test]]
         return train, dev, test
         
+    @lru_cache(maxsize = 5)
+    def prep_data_single(self, dname, lim: Optional[int] = None):
+        data = load_nmt_data(dname)
+        data = to_namespace(data)
+        data = self._prep_ids(data)
+        return data
+
     def _prep_ids(self, split: List[SimpleNamespace]):
         split = deepcopy(split)
         for ex in tqdm(split):

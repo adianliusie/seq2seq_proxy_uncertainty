@@ -13,8 +13,8 @@ logging.basicConfig(
     level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
 
     # Model arguments
     model_parser = argparse.ArgumentParser(description='Arguments for system and model configuration')

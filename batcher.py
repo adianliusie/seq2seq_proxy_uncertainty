@@ -4,6 +4,14 @@ from collections.abc import Iterator
 
 import torch
 import random
+import logging
+
+# Creat Logger
+logging.basicConfig(
+    format='%(asctime)s %(levelname)-8s %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class Batcher(object):
@@ -11,7 +19,7 @@ class Batcher(object):
         self.maxlen = maxlen
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    def batches(self, data: List, numtokens: int, numsequences: int, shuffle: bool = False) ->  Iterator:
+    def batches(self, data: List, numtokens: int, numsequences: int, shuffle: bool = False, return_last = False) ->  Iterator:
         """
         Splits the data into batches and returns them
         """
@@ -32,10 +40,14 @@ class Batcher(object):
 
             # Update step
             step += bsz
+        
+        if return_last:
+            batches.append(examples[step:])
 
         if shuffle: 
             random.shuffle(batches)
 
+        logger.info(f"Number of batches: {len(batches)}")
         for batch in batches:
             yield self.batchify(batch)
 

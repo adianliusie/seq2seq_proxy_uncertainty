@@ -14,6 +14,10 @@ def load_nmt_data(dname: str = 'wmt16-en-de'):
         return load_wmt16(lang = 'de')
     if dname == 'newscommentary-en-de':
         return load_newscommentary(lang = 'de')
+    if dname == 'newscommentary-en-de-dev':
+        return load_newscommentary_dev(lang = 'de')
+    if dname == 'newscommentary-en-de-test':
+        return load_newscommentary_test(lang = 'de')
     
     raise ValueError("Invalid dataset name: {}".format(dname))
                        
@@ -51,3 +55,23 @@ def load_newscommentary(lang: str = 'de'):
     train, dev, test = data['train'], adata['validation'], adata['test']
     train, dev, test = [format_wmt16(split, lang) for split in [train, dev, test]]
     return train, dev, test
+
+
+def load_newscommentary_dev(lang: str = 'de'):
+    """
+    Loads news_commentary-de-en-dev data from huggingface
+    """
+    adata = load_dataset(f"wmt16", "{}-en".format(lang))
+    dev = adata['validation']
+    dev = format_wmt16(dev, lang)
+    return dev
+
+
+def load_newscommentary_test(lang: str = 'de'):
+    """
+    Loads news_commentary-de-en-test data from huggingface
+    """
+    adata = load_dataset(f"wmt16", "{}-en".format(lang))
+    test = adata['test']
+    test = format_wmt16(test, lang)
+    return test

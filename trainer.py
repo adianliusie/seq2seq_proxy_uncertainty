@@ -5,9 +5,11 @@ from itertools import cycle
 from collections import namedtuple
 from types import SimpleNamespace
 from typing import Optional
+from tqdm import tqdm
 
 import wandb
 import torch
+import sacrebleu
 
 from data.handler import DataHandler
 from batcher import Batcher
@@ -153,11 +155,17 @@ class Trainer(object):
 
     def decode(self, args: namedtuple):
         
-        # Get train, val, test split of data
-        _, _, test = self.data_handler.prep_data(args.dataset, args.datasubset)
+        # Get dataset
+        data = self.data_handler.prep_data_single(args.dataset, args.datasubset)
 
         # Load model
         self.load_model()
+
+        # Device management
+        self.to(args.device)
+
+        # Setup model for translation
+        self.model.eval()
 
         # Number of parameters
         logger.info("Number of parameters in model {:.1f}M".format(
@@ -173,23 +181,48 @@ class Trainer(object):
             sum(p.numel() for p in self.model.lm_head.parameters()) / 1e6
         ))
 
-        # Device management
-        self.to(args.device)
-
-        # Setup model for translation
-        self.model.eval()
-
         # Create batched dataset
-        testloader = self.batcher(
-            data = test, 
+        dataloader = self.batcher(
+            data = data, 
             numtokens = args.num_tokens, 
             numsequences = args.num_sequences, 
             shuffle = False
         )
 
+        # Save all predictions
+        pred = []
+
         logger.info("Starting Decode")
-        for step, batch in enumerate(testloader, start = 0):
-            pass
+        for batch in tqdm(dataloader):
+            
+            # Generate prediction
+            output = self.model.generate(
+                input_ids = batch.input_ids, 
+                attention_mask = batch.attention_mask, 
+                max_length = args.decode_max_length,
+                num_beams = args.num_beams,
+                length_penalty = args.length_penalty,
+                no_repeat_ngram_size = args.no_repeat_ngram_size,
+            )
+
+            for i, out, ref in zip(batch.ex_id, output, batch.label_text):
+                # Tokenzier decode one sample at a time
+                out = self.data_handler.tokenizer.decode(out)
+                out = out[:out.index('</s>')]
+
+                # Save all decoded outputs
+                pred.append({
+                    'id': i, 
+                    'ref': ref, 
+                    'out': out
+                })
+
+        score = sacrebleu.corpus_bleu(
+            [p['out'] for p in pred],
+            [[p['ref'] for p in pred]],
+        ).score
+        logger.info("Finished Decode")
+        logger.info("Sacrebleu performance: {score}")
 
     @torch.no_grad()
     def validate(self, args, data, mode):
@@ -303,7 +336,9 @@ class Trainer(object):
     def load_model(self, name: Optional[str] = None):
         name = name if name is not None else self.model_args.transformer
         self.model.load_state_dict(
-            os.path.join(self.exp_path, 'models', '{}.pt'.format(name))
+            torch.load(
+                os.path.join(self.exp_path, 'models', '{}.pt'.format(name))
+            )
         )
 
     def to(self, device):
