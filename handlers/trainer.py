@@ -213,7 +213,7 @@ class Trainer(object):
         path = os.path.join(self.exp_path, name)
         save_json(data.__dict__, path)
 
-    def load_args(self, name : str) -> SimpleNamespace:
+    def load_args(self, name: str) -> SimpleNamespace:
         path = os.path.join(self.exp_path, name)
         args = load_json(path)
         return SimpleNamespace(**args)

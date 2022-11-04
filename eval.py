@@ -18,6 +18,7 @@ if __name__ == '__main__':
     ### Decoding arguments
     decode_parser = argparse.ArgumentParser(description='Arguments for training the system')
     decode_parser.add_argument('--path', type=str, help='path to experiment')
+    decode_parser.add_argument('--transformer', default='t5-base',type=str, help='[bert, roberta, electra ...]')
     decode_parser.add_argument('--dataset', default='newscommentary-en-de-test', type=str, help='dataset to train the system on')
 
     decode_parser.add_argument('--num-tokens', default=512, type=int, help='max number of tokens in a batch')
