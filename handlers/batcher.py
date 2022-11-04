@@ -15,10 +15,17 @@ logger = logging.getLogger(__name__)
 
 
 class Batcher(object):
-    def __init__(self, maxlen: int = 512, evaluation: bool = False):
+    def __init__(self, maxlen: int = 512):
         self.maxlen = maxlen
-        self.evaluation = evaluation
+        self.evaluation = False
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    def train(self):
+        self.evaluation = False
+
+    def eval(self):
+        self.evaluation = True
+
 
     def batches(self, data: List, numtokens: int, numsequences: int, shuffle: bool = False, return_last = False) ->  Iterator:
         """

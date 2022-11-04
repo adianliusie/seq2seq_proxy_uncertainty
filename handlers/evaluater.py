@@ -30,12 +30,6 @@ class Evaluator(Trainer):
         args = self.load_args('model_args.json')
         self.setup_helpers(args)
 
-    def setup_helpers(self, args: namedtuple):
-        self.model_args = args
-        self.data_handler = DataHandler(name=args.transformer)
-        self.batcher = Batcher(maxlen=args.maxlen, evaluation=True)
-        self.model = load_model(system=args.transformer)
-
     def decode(self, args: namedtuple):
         # Get dataset
         data = self.data_handler.prep_data_single(args.dataset)
@@ -45,9 +39,12 @@ class Evaluator(Trainer):
 
         # Device management
         self.to(args.device)
-
+    
         # Setup model for translation
         self.model.eval()
+
+        # Set batcher to eval (no maxlen)
+        self.batcher.eval()
 
         # Print number of model parameters
         self.log_num_params()
