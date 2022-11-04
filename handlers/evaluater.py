@@ -4,6 +4,10 @@ from collections import namedtuple
 
 from handlers.trainer import Trainer
 
+from data.handler import DataHandler
+from handlers.batcher import Batcher
+from models.models import load_model 
+
 
 # Create Logger
 logging.basicConfig(
@@ -13,15 +17,24 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def eosindex(decoding):
+    try:
+        return decoding.index('</s>')
+    except ValueError:
+        return len(decoding)
+
+
 class Evaluator(Trainer):
     def __init__(self, path):
-        self.setup_helpers(path)
+        self.exp_path = path
+        args = self.load_args('model_args.json')
+        self.setup_helpers(args)
 
-    def eosindex(self, decoding):
-        try:
-            return decoding.index('</s>')
-        except ValueError:
-            return len(decoding)
+    def setup_helpers(self, args: namedtuple):
+        self.model_args = args
+        self.data_handler = DataHandler(name=args.transformer)
+        self.batcher = Batcher(maxlen=args.maxlen, evaluation=True)
+        self.model = load_model(system=args.transformer)
 
     def decode(self, args: namedtuple):
         # Get dataset
@@ -67,7 +80,7 @@ class Evaluator(Trainer):
             for i, out, ref in zip(batch.ex_id, output, batch.label_text):
                 # Tokenzier decode one sample at a time
                 out = self.data_handler.tokenizer.decode(out)
-                out = out[:self.eosindex(out)]
+                out = out[:eosindex(out)]
 
                 # Save all decoded outputs
                 pred.append({

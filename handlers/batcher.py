@@ -15,8 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 class Batcher(object):
-    def __init__(self, maxlen: int = 512):
+    def __init__(self, maxlen: int = 512, evaluation: bool = False):
         self.maxlen = maxlen
+        self.evaluation = evaluation
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     def batches(self, data: List, numtokens: int, numsequences: int, shuffle: bool = False, return_last = False) ->  Iterator:
@@ -85,9 +86,10 @@ class Batcher(object):
             input_text = ex.input_ids
             label_text = ex.label_text
 
-            # Skip all examples larger than limit
-            if len(input_ids) > self.maxlen or len(ex.label_ids) > self.maxlen: 
-                continue
+            # Skip all examples larger than limit if in training mode
+            if not self.evaluation:
+                if len(input_ids) > self.maxlen or len(ex.label_ids) > self.maxlen: 
+                    continue
 
             examples.append([ex_id, input_ids, label_ids, input_text, label_text])
 
@@ -116,9 +118,9 @@ class Batcher(object):
     def to(self, device: torch.device):
         self.device = device
     
-    def __call__(self, data, numtokens, numsequences, shuffle=False):
+    def __call__(self, data, numtokens, numsequences, return_last=False, shuffle=False):
         """
         Routes the main method do the batches function
         """
-        return self.batches(data=data, numtokens=numtokens, numsequences=numsequences, shuffle=shuffle)
+        return self.batches(data=data, numtokens=numtokens, numsequences=numsequences, return_last=return_last, shuffle=shuffle)
     
