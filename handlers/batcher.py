@@ -43,7 +43,7 @@ class Batcher(object):
             # Update step
             step += bsz
 
-        if return_last:
+        if return_last and step < len(examples):
             batches.append(examples[step:])
         
         if shuffle: 

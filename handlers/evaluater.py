@@ -17,9 +17,15 @@ class Evaluator(Trainer):
     def __init__(self, path):
         self.setup_helpers(path)
 
+    def eosindex(self, decoding):
+        try:
+            return decoding.index('</s>')
+        except ValueError:
+            return len(decoding)
+
     def decode(self, args: namedtuple):
         # Get dataset
-        data = self.data_handler.prep_data_single(args.dataset, args.datasubset)
+        data = self.data_handler.prep_data_single(args.dataset)
 
         # Load model
         self.load_model()
@@ -38,6 +44,7 @@ class Evaluator(Trainer):
             data = data, 
             numtokens = args.num_tokens, 
             numsequences = args.num_sequences, 
+            return_last = True,
             shuffle = False
         )
 
@@ -60,7 +67,7 @@ class Evaluator(Trainer):
             for i, out, ref in zip(batch.ex_id, output, batch.label_text):
                 # Tokenzier decode one sample at a time
                 out = self.data_handler.tokenizer.decode(out)
-                out = out[:out.index('</s>')]
+                out = out[:self.eosindex(out)]
 
                 # Save all decoded outputs
                 pred.append({

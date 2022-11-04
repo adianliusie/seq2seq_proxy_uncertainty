@@ -72,7 +72,7 @@ class DataHandler(object):
         return train, dev, test
         
     @lru_cache(maxsize = 5)
-    def prep_data_single(self, dname, lim: Optional[int] = None):
+    def prep_data_single(self, dname):
         data = load_nmt_data(dname)
         data = to_namespace(data)
         data = self._prep_ids(data)
