@@ -1,5 +1,6 @@
 import logging
 import sacrebleu
+from collections import namedtuple
 
 from handlers.trainer import Trainer
 
@@ -44,7 +45,7 @@ class Evaluator(Trainer):
         pred = []
 
         logger.info("Starting Decode")
-        for batch in tqdm(dataloader):
+        for batch in dataloader:
             
             # Generate prediction
             output = self.model.generate(
