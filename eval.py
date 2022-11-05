@@ -1,4 +1,6 @@
 import os
+import json
+
 import argparse
 import logging
 from statistics import mode
@@ -37,3 +39,12 @@ if __name__ == '__main__':
     
     evaluator = Evaluator(decode_args.path)
     preds = evaluator.decode(decode_args)
+
+    # Path to store predictions in
+    path = os.path.join(decode_args.path, decode_args.dataset)
+
+    # Create dictionary if it does not exist
+    os.makedirs(path)
+
+    with open(os.path.join(path, "preds.json"), 'w', encoding='utf-8') as f:
+        json.dump(preds, f, ensure_ascii = False, indent = 4)

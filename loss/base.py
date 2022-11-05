@@ -1,6 +1,11 @@
+from typing import Tuple
+from types import SimpleNamespace
+
+import os
 import torch
 
 from utils.meter import AverageMeter
+from utils.general import load_json
 
 
 class BaseLoss(object):
@@ -16,6 +21,10 @@ class BaseLoss(object):
             if key not in self.metrics:
                 self.metrics[key] = AverageMeter()
             self.metrics[key].update(value, batch_size)
+
+    def load_args(self, path: str) -> SimpleNamespace:
+        args = load_json(path)
+        return SimpleNamespace(**args)
 
     def forward(self, batch):
         raise NotImplementedError

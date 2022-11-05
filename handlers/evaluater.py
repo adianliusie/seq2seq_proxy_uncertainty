@@ -88,8 +88,6 @@ class Evaluator(Trainer):
 
         logger.info("Starting Decode")
         for (i, batch) in enumerate(dataloader):
-
-            print(f"Decoding batch {i + 1}", end = "\r")
             
             # Batch size will be repeatedly used
             batch_size = batch.input_ids.size(0)
@@ -171,11 +169,11 @@ class Evaluator(Trainer):
 
         # Corpus level scoring
         score = sacrebleu.corpus_bleu(
-            [p['beam-0-dec'] for p in pred],
-            [[p['ref'] for p in pred]],
+            [p['beam-0-dec'] for p in all_preds],
+            [[p['ref'] for p in all_preds]],
         ).score
 
         logger.info("Finished Decode")
         logger.info(f"Sacrebleu performance: {score}")
 
-        return all_preds
+        return [score] + all_preds

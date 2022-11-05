@@ -53,22 +53,4 @@ class CrossEntropyLoss(BaseLoss):
 
         return loss
 
-    """
-    def eval_forward(self, batch):
-
-        # Free run decoding of the model
-        output = self.model.generate(
-            input_ids = batch.input_ids, 
-            attention_mask = batch.attention_mask, 
-            num_beams = self.args.num_beams,
-            num_beam_groups = self.args.num_beam_groups,
-            length_penalty = self.args.length_penalty,
-            max_length = 100,
-        )
-
-        # Clean up decoding
-        output = self.tokenizer.batch_decode(output)
-
-        # Remove all elements past 'eos' token
-    """
 

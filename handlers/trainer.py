@@ -17,7 +17,7 @@ from utils.general import save_json, load_json
 from loss import load_loss
 
 
-# Creat Logger
+# Create Logger
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S',
@@ -261,6 +261,10 @@ class Trainer(object):
         assert hasattr(self, 'model') and hasattr(self, 'batcher')
         self.model.to(device)
         self.batcher.to(device)
+
+        # If the loss has a teacher
+        if hasattr(self.model_loss, 'teacher'):
+            self.model_loss.teacher.to(device)
 
     def setup_wandb(self, args: namedtuple):
         #group name is everything before the final 'vi' and after 'checkpoints/'

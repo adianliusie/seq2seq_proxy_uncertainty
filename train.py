@@ -39,7 +39,9 @@ if __name__ == '__main__':
     train_parser.add_argument('--lr', default=1e-4, type=float, help='initial learning rate')
 
     train_parser.add_argument('--loss', default='cross_entropy', type=str, help='loss function to use to train system')
-    train_parser.add_argument('--wandb', action='store_true',    help='if set, will log to wandb')
+    train_parser.add_argument('--teacher-path', default='checkpoints', type=str, help='path to teacher for distillation losses')
+    train_parser.add_argument('--temperature', default=1, type=float, help='temperature for distillation loss')
+    train_parser.add_argument('--wandb', action='store_true', help='if set, will log to wandb')
     train_parser.add_argument('--device', default='cuda', type=str, help='selecting device to use')
 
     train_args, toargs = train_parser.parse_known_args()
