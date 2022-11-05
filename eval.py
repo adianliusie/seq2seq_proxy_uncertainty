@@ -36,4 +36,4 @@ if __name__ == '__main__':
     logger.info(decode_args.__dict__)
     
     evaluator = Evaluator(decode_args.path)
-    evaluator.decode(decode_args)
+    preds = evaluator.decode(decode_args)
