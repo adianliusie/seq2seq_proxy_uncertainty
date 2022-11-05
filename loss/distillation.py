@@ -25,6 +25,7 @@ class DistillationLoss(CrossEntropyLoss):
     def __init__(self, args, model, tokenizer):
         super().__init__(args, model, tokenizer)
         self.teacher = self.load_teacher()
+        self.temperature = self.args.temperature
 
     def load_teacher(self):
 
@@ -90,7 +91,7 @@ class DistillationLoss(CrossEntropyLoss):
         loss = kl_divergence_loss(
             input_logits=output.logits,
             target_logits=teacher_output.logits,
-            temperature=self.args.temperature,
+            temperature=self.temperature,
             mask=mask
         )
 

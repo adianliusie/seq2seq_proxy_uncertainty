@@ -102,7 +102,7 @@ class Trainer(object):
             self.setup_wandb(args)
 
         logger.info("Starting Train")
-        for step, batch in enumerate(trainloader, start = 1):
+        for step, batch in enumerate(cycle(trainloader), start = 1):
             # Perform forward pass
             loss = self.model_loss(batch)
 
