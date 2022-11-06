@@ -42,6 +42,8 @@ if __name__ == '__main__':
     train_parser.add_argument('--teacher-path', default='checkpoints', type=str, help='path to teacher for distillation losses')
     train_parser.add_argument('--temperature', default=1, type=float, help='temperature for distillation loss')
     train_parser.add_argument('--proxy-regularization-strength', default=0.0001, type=float, help='soft rank regularization strength')    
+    train_parser.add_argument('--proxy-permutation-invariance', default=0, type=int, help='proxy sorting after softmax')    
+    train_parser.add_argument('--proxy-entropy', default=0, type=int, help='whether or not to train on entropy')    
     train_parser.add_argument('--wandb', action='store_true', help='if set, will log to wandb')
     train_parser.add_argument('--device', default='cuda', type=str, help='selecting device to use')
 

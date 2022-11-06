@@ -3,9 +3,9 @@ import pytorch_wrapper as pw
 
 __all__ = [
     "get_entropy",
-    "get_sentence_entropy",
+    "get_sentence_entropy_unc",
     "get_confidence",
-    "get_sentence_confidence",
+    "get_sentence_confidence_unc",
     "kl_divergence_loss",
 ]
 
@@ -20,7 +20,7 @@ def get_entropy(logits: torch.Tensor) -> torch.Tensor:
     return entropy
 
 
-def get_sentence_entropy(logits: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+def get_sentence_entropy_unc(logits: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     """
     Computes the sentence entropy.
     """
@@ -38,13 +38,13 @@ def get_confidence(logits: torch.Tensor) -> torch.Tensor:
     return confidence
 
 
-def get_sentence_confidence(logits: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+def get_sentence_confidence_unc(logits: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     """
     Computes the sentence confidence.
     """
     confidence = get_confidence(logits)
     confidence = pw.functional.masked_mean_pooling(confidence, mask, dim = 1)
-    return confidence
+    return -confidence
 
 
 def kl_divergence_loss(input_logits: torch.Tensor, target_logits: torch.Tensor, temperature: float, mask: torch.Tensor) -> torch.Tensor:

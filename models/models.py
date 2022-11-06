@@ -43,9 +43,13 @@ class ProxyHead(nn.Module):
         self.lin2 = nn.Linear(intermediate_dim, intermediate_dim)
         self.lin3 = nn.Linear(intermediate_dim, 1)
 
-    def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    def invariance(self, x: torch.Tensor) -> torch.Tensor:
+        return x.sort(dim = -1).values
+
+    def forward(self, x: torch.Tensor, mask: torch.Tensor, sorting: bool = False) -> torch.Tensor:
         x = pw.functional.masked_mean_pooling(x, mask, dim = 1)
         x = torch.softmax(self.lin1(x), dim = -1)
+        x = self.invariance(x) if sorting else x
         x = torch.tanh(self.lin2(x))
         x = self.lin3(x).squeeze(-1)
         return x
@@ -60,6 +64,9 @@ class T5ProxyForConditionalGeneration(T5ForConditionalGeneration):
             input_dim = config.d_model,
             intermediate_dim = config.d_ff,
         )
+    
+    def set_arguments(self, args):
+        self.uargs = args
 
     # encoder_hidden_states
     def forward(
@@ -80,6 +87,7 @@ class T5ProxyForConditionalGeneration(T5ForConditionalGeneration):
         output.proxies = self.encoder_head(
             output.encoder_last_hidden_state, 
             mask = attention_mask,
+            sorting = self.uargs.proxy_permutation_invariance,
         )
 
         return output

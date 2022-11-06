@@ -12,7 +12,7 @@ import torchsort
 from torchsort import soft_rank, soft_sort
 
 from .utils import kl_divergence_loss
-from .utils import get_sentence_confidence, get_sentence_entropy
+from .utils import get_sentence_confidence_unc, get_sentence_entropy_unc
 from .distillation import DistillationLoss
 
 # Create Logger
@@ -50,9 +50,17 @@ class DistillationProxyLoss(DistillationLoss):
     def __init__(self, args, model, tokenizer):
         super().__init__(args, model, tokenizer)
 
+        # Set model arguments
+        self.model.set_arguments(args)
+
+        # Set the scoring function
+        self.proxy_gen = get_sentence_confidence_unc
+        if args.proxy_entropy:
+            self.proxy_gen = get_sentence_entropy_unc
+
     def rank_loss(self, output, teacher_output, label_mask):
 
-        target_scalars = get_sentence_confidence(
+        target_scalars = self.proxy_gen(
             teacher_output.logits, 
             mask = label_mask
         )
