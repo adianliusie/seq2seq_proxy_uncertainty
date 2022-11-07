@@ -274,6 +274,7 @@ class Trainer(object):
 
         # remove everything before */checkpoints for the group name 
         group_name = re.sub(r'^.*?checkpoints', '', group_name)
+        exp_name = re.sub(r'^.*?checkpoints', '', self.exp_path)
 
         # remove the final -vi from the group name
         group_name = '-v'.join(group_name.split('-v')[:-1])
@@ -282,7 +283,7 @@ class Trainer(object):
         wandb.init(
             project='proxy-uncertainty-{}'.format(args.dataset),
             entity='mg-speech-group',
-            name=self.exp_path, 
+            name=exp_name, 
             group=group_name 
         )
 
