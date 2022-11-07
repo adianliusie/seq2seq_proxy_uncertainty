@@ -19,6 +19,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def create_lengths_ref(label_id):
+    # Get the index of eos for a single example
+    return (label_id == 1).nonzero().item() + 1
+
+
 def create_temporary_labels(output):
     # Get the index of eos
     eos = (output == 1).nonzero(as_tuple = True)[1]
@@ -54,6 +59,9 @@ class Evaluator(Trainer):
         args = self.load_args('model_args.json')
         self.setup_helpers(args)
 
+        # Need this for the proxy model, not the best solution...
+        self.train_args = self.load_args('train-args.json')
+
     @torch.no_grad()
     def decode(self, args: namedtuple):
         # Get dataset
@@ -61,6 +69,10 @@ class Evaluator(Trainer):
 
         # Load model
         self.load_model()
+
+        # Set arguments
+        if hasattr(self.model, 'set_arguments'):
+            self.model.set_arguments(self.train_args)
 
         # Device management
         self.to(args.device)
@@ -105,15 +117,37 @@ class Evaluator(Trainer):
                 return_dict_in_generate = True,
             )
 
+            # Generate reference prediction
+            reference_output = self.model(
+                input_ids = batch.input_ids, 
+                attention_mask = batch.attention_mask, 
+                labels = batch.label_ids,
+            )
+
             # Save all predictions within batch for logit generation
             batch_preds = []
 
             for batch_id in range(batch_size):
 
+                # Generate teacher-forcing prediction
+                reference_pred = reference_output.logits[batch_id].argmax(dim = -1)
+                reference_pred_text = self.data_handler.tokenizer.decode(reference_pred, skip_special_tokens=True)
+                proxies = reference_output.proxies[batch_id].item() if hasattr(reference_output, 'proxies') else None
+                length = create_lengths_ref(batch.label_ids[batch_id])
+
+                # Compute confidence and entropies:
+                log_probs = torch.log_softmax(reference_output.logits[batch_id, :length], dim = -1)
+
                 # Individual prediction
                 pred = {
                     'id': batch.ex_id[batch_id],
                     'ref': batch.label_text[batch_id],
+                    'ref-pred': reference_pred.cpu().tolist(),
+                    'ref-pred-dec': reference_pred_text,
+                    'ref-len': length,
+                    'ref-conf': compute_log_confidence_unc(log_probs).cpu().tolist(),
+                    'ref-ent': compute_entropy(log_probs).cpu().tolist(),
+                    'proxies': proxies,
                 }
 
                 # Iterate over all beams
@@ -167,13 +201,20 @@ class Evaluator(Trainer):
             # Save all predicitons in a master list
             all_preds.extend(batch_preds)
 
-        # Corpus level scoring
-        score = sacrebleu.corpus_bleu(
+        # Corpus level scoring teacher-forcing
+        refscore = sacrebleu.corpus_bleu(
+            [p['ref-pred-dec'] for p in all_preds],
+            [[p['ref'] for p in all_preds]],
+        ).score
+
+        # Corpus level scoring free-running
+        freescore = sacrebleu.corpus_bleu(
             [p['beam-0-dec'] for p in all_preds],
             [[p['ref'] for p in all_preds]],
         ).score
 
         logger.info("Finished Decode")
-        logger.info(f"Sacrebleu performance: {score}")
+        logger.info(f"TF Sacrebleu performance: {refscore}")
+        logger.info(f"FR Sacrebleu performance: {freescore}")
 
-        return [score] + all_preds
+        return [refscore, freescore] + all_preds

@@ -74,6 +74,7 @@ class T5ProxyForConditionalGeneration(T5ForConditionalGeneration):
         input_ids: Optional[torch.LongTensor] = None,
         attention_mask: Optional[torch.FloatTensor] = None,
         labels: Optional[torch.LongTensor] = None,
+        **kwargs,
     ) -> Union[Tuple[torch.FloatTensor], Seq2SeqLMOutput]:
         
         # Forward propagate through main model
@@ -81,6 +82,7 @@ class T5ProxyForConditionalGeneration(T5ForConditionalGeneration):
             input_ids = input_ids,
             attention_mask = attention_mask,
             labels = labels,
+            **kwargs,
         )
 
         # Get the proxy scores as well

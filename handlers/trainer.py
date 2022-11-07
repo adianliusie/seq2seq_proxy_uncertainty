@@ -263,7 +263,7 @@ class Trainer(object):
         self.batcher.to(device)
 
         # If the loss has a teacher
-        if hasattr(self.model_loss, 'teacher'):
+        if hasattr(self, 'model_loss') and hasattr(self.model_loss, 'teacher'):
             self.model_loss.teacher.to(device)
 
     def setup_wandb(self, args: namedtuple):
