@@ -44,7 +44,8 @@ if __name__ == '__main__':
     path = os.path.join(decode_args.path, decode_args.dataset)
 
     # Create dictionary if it does not exist
-    os.makedirs(path)
+    if not os.path.isdir(path):
+        os.makedirs(path)
 
     with open(os.path.join(path, "preds.json"), 'w', encoding='utf-8') as f:
         json.dump(preds, f, ensure_ascii = False, indent = 4)
