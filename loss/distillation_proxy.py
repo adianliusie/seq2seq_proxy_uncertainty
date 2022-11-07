@@ -50,9 +50,13 @@ class DistillationProxyLoss(DistillationLoss):
     def __init__(self, args, model, tokenizer):
         super().__init__(args, model, tokenizer)
 
+        # Set loss arguments 
+        self.distillation_w = args.proxy_distillation_weight_start
+        self.set_scheduling(args)
+
         # Set model arguments
         self.model.set_arguments(args)
-
+        
         # Set the scoring function
         self.proxy_gen = get_sentence_confidence_unc
         if args.proxy_entropy:
@@ -138,6 +142,16 @@ class DistillationProxyLoss(DistillationLoss):
             'op-pad': batch.output_numpadding,
         }, batch_size = 1)
 
-        return kl + rl
+        return rl + self.distillation_w * kl
 
+    def set_scheduling(self, args):
+        w_start, w_end = args.proxy_distillation_weight_start, args.proxy_distillation_weight_end
+        if args.proxy_distillation_weight_end is not None:
+            self.step_size = (w_end - w_start)/args.num_steps
+        else:
+            self.step_size = 0
 
+    def step(self):
+        self.distillation_w += self.step_size
+
+    

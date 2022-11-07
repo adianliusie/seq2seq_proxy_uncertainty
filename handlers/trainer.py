@@ -1,5 +1,8 @@
 import os
 import logging
+import wandb
+import torch
+import re
 
 from itertools import cycle
 from collections import namedtuple
@@ -7,8 +10,6 @@ from types import SimpleNamespace
 from typing import Optional
 from tqdm import tqdm
 
-import wandb
-import torch
 
 from data.handler import DataHandler
 from handlers.batcher import Batcher
@@ -113,8 +114,9 @@ class Trainer(object):
             if step % args.num_gradient_accum == 0:
                 optimizer.step()
                 scheduler.step()
+                self.model_loss.step()
                 optimizer.zero_grad()
-
+        
             # Print train performance every log_every samples
             if step % (args.log_every * args.num_gradient_accum) == 0:
                 metrics = self.log_metrics(
@@ -267,10 +269,15 @@ class Trainer(object):
             self.model_loss.teacher.to(device)
 
     def setup_wandb(self, args: namedtuple):
-        #group name is everything before the final 'vi' and after 'checkpoints/'
-        group_name = '-v'.join(self.exp_path.split('-v')[:-1])
-        group_name = group_name.replace('checkpoints/', '')
 
+        group_name = self.exp_path
+
+        # remove everything before */checkpoints for the group name 
+        group_name = re.sub(r'^.*?checkpoints', '', group_name)
+
+        # remove the final -vi from the group name
+        group_name = '-v'.join(group_name.split('-v')[:-1])
+        
         #init wandb project
         wandb.init(
             project='proxy-uncertainty-{}'.format(args.dataset),
