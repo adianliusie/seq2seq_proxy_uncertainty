@@ -32,6 +32,14 @@ def load_nmt_data(dname: str = 'wmt16-en-de'):
         return load_newstest19(lang = 'de')
     if dname == 'newstest20':
         return load_newstest20(lang = 'de')
+    if dname == 'iwslt2014':
+        return load_iwslt201x(lang = 'de', year = '2014')
+    if dname == 'iwslt2015':
+        return load_iwslt201x(lang = 'de', year = '2015')
+    if dname == 'iwslt2016':
+        return load_iwslt201x(lang = 'de', year = '2016')
+    if dname == 'iwslt2017':
+        return load_iwslt2017(lang = 'de')
     
     raise ValueError("Invalid dataset name: {}".format(dname))
                        
@@ -83,7 +91,7 @@ def format_newstest(src, ref):
 
 def load_newstest(path_src: str, path_ref: str):
     """
-    Loads generic newstest en-de data from huggingface
+    Loads generic newstest en-de data from file locally
     """
     path = "/rds/project/rds-8YSp2LXTlkY/data/nmt-newstest/dev/text"
     with open(os.path.join(path, path_src), "r") as f:
@@ -97,7 +105,7 @@ def load_newstest(path_src: str, path_ref: str):
 
 def load_newstest13(lang: str = 'de'):
     """
-    Loads newstest-13 en-de data from huggingface
+    Loads newstest-13 en-de data from file locally
     """
     return load_newstest(
         "newstest2013-src.en.sgm.text",
@@ -107,7 +115,7 @@ def load_newstest13(lang: str = 'de'):
 
 def load_newstest14(lang: str = 'de'):
     """
-    Loads newstest-14 en-de data from huggingface
+    Loads newstest-14 en-de data from file locally
     """
     return load_newstest(
         "newstest2014-deen-src.en.sgm.text",
@@ -117,7 +125,7 @@ def load_newstest14(lang: str = 'de'):
 
 def load_newstest15(lang: str = 'de'):
     """
-    Loads newstest-15 en-de data from huggingface
+    Loads newstest-15 en-de data from file locally
     """
     return load_newstest(
         "newstest2015-ende-src.en.sgm.text",
@@ -127,7 +135,7 @@ def load_newstest15(lang: str = 'de'):
 
 def load_newstest16(lang: str = 'de'):
     """
-    Loads newstest-16 en-de data from huggingface
+    Loads newstest-16 en-de data from file locally
     """
     return load_newstest(
         "newstest2016-ende-src.en.sgm.text",
@@ -137,7 +145,7 @@ def load_newstest16(lang: str = 'de'):
 
 def load_newstest17(lang: str = 'de'):
     """
-    Loads newstest-17 en-de data from huggingface
+    Loads newstest-17 en-de data from file locally
     """
     return load_newstest(
         "newstest2017-ende-src.en.sgm.text",
@@ -147,7 +155,7 @@ def load_newstest17(lang: str = 'de'):
 
 def load_newstest18(lang: str = 'de'):
     """
-    Loads newstest-18 en-de data from huggingface
+    Loads newstest-18 en-de data from file locally
     """
     return load_newstest(
         "newstest2018-ende-src.en.sgm.text",
@@ -157,7 +165,7 @@ def load_newstest18(lang: str = 'de'):
 
 def load_newstest19(lang: str = 'de'):
     """
-    Loads newstest-19 en-de data from huggingface
+    Loads newstest-19 en-de data from file locally
     """
     return load_newstest(
         "newstest2019-ende-src.en.sgm.text",
@@ -167,9 +175,27 @@ def load_newstest19(lang: str = 'de'):
 
 def load_newstest20(lang: str = 'de'):
     """
-    Loads newstest-20 en-de data from huggingface
+    Loads newstest-20 en-de data from file locally
     """
     return load_newstest(
         "newstest2020-ende-src.en.sgm.text",
         "newstest2020-ende-ref.de.sgm.text",
     )
+
+
+def load_iwslt201x(lang: str = 'de', year: str = '2014'):
+    """
+    Loads iswlt-2017 en-de data from huggingface
+    """
+    dataset = load_dataset("ted_talks_iwslt", language_pair=("en", lang), year=year)
+    dataset = dataset['train']
+    return format_wmt16(dataset, lang=lang)
+
+
+def load_iwslt2017(lang: str = 'de'):
+    """
+    Loads iswlt-2017 en-de data from huggingface
+    """
+    dataset = load_dataset("iwslt2017", f"iwslt2017-en-{lang}")
+    dataset = dataset['test']
+    return format_wmt16(dataset, lang=lang)
