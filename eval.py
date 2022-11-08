@@ -20,7 +20,6 @@ if __name__ == '__main__':
     ### Decoding arguments
     decode_parser = argparse.ArgumentParser(description='Arguments for training the system')
     decode_parser.add_argument('--path', type=str, help='path to experiment')
-    decode_parser.add_argument('--transformer', default='t5-base',type=str, help='[bert, roberta, electra ...]')
     decode_parser.add_argument('--dataset', default='newscommentary-en-de-test', type=str, help='dataset to train the system on')
 
     decode_parser.add_argument('--num-tokens', default=512, type=int, help='max number of tokens in a batch')
@@ -29,8 +28,6 @@ if __name__ == '__main__':
 
     decode_parser.add_argument('--decode-max-length', default=256, type=int, help='maximum output sequence length for decoding')
     decode_parser.add_argument('--num-beams', default=12, type=int, help='number of beams')
-    # decode_parser.add_argument('--num-beam-groups', default=3, type=int, help='number of groups of beams')
-    # decode_parser.add_argument('--diversity-penalty', default=0.0, type=float, help='penalizing similarity between groups')
     decode_parser.add_argument('--length-penalty', default=0.6, type=float, help='penalizing shorter sequences for larger values')
     decode_parser.add_argument('--no-repeat-ngram-size', default=5, type=int, help='no repeating n gram')
     decode_args = decode_parser.parse_args()
