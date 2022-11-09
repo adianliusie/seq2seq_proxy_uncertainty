@@ -31,27 +31,41 @@ def load_model(system: str) -> T5ForConditionalGeneration:
         return T5ProxyForConditionalGeneration.from_pretrained("t5-base", return_dict = True)
     elif system == 't5-large-proxy': 
         return T5ProxyForConditionalGeneration.from_pretrained("t5-large", return_dict = True)
+    if system == 't5-small-proxy-rev':
+        return T5ProxyRevForConditionalGeneration.from_pretrained("t5-small", return_dict = True)
+    elif system == 't5-base-proxy-rev': 
+        return T5ProxyRevForConditionalGeneration.from_pretrained("t5-base", return_dict = True)
+    elif system == 't5-large-proxy-rev': 
+        return T5ProxyRevForConditionalGeneration.from_pretrained("t5-large", return_dict = True)
 
     raise ValueError("{} is an invalid system: no seq2seq model found".format(system))
 
 
 
 class ProxyHead(nn.Module):
-    def __init__(self, input_dim: int, intermediate_dim: int):
+    def __init__(self, input_dim: int, intermediate_dim: int, reverse: bool = False):
         super().__init__()
         self.lin1 = nn.Linear(input_dim, intermediate_dim)
         self.lin2 = nn.Linear(intermediate_dim, intermediate_dim)
         self.lin3 = nn.Linear(intermediate_dim, 1)
+        self.reverse = reverse
 
     def invariance(self, x: torch.Tensor) -> torch.Tensor:
         return x.sort(dim = -1).values
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor, sorting: bool = False) -> torch.Tensor:
-        x = pw.functional.masked_mean_pooling(x, mask, dim = 1)
+        
+        # When reverse is false we perform pooling prior to feeding into the head
+        x = x if self.reverse else pw.functional.masked_mean_pooling(x, mask, dim = 1)
+        
+        # The smaller mlp
         x = torch.softmax(self.lin1(x), dim = -1)
         x = self.invariance(x) if sorting else x
         x = torch.tanh(self.lin2(x))
         x = self.lin3(x).squeeze(-1)
+
+        # When reverse is activated 
+        x = x if not self.reverse else pw.functional.masked_mean_pooling(x, mask, dim = 1)
         return x
 
 
@@ -93,3 +107,11 @@ class T5ProxyForConditionalGeneration(T5ForConditionalGeneration):
         )
 
         return output
+
+
+class T5ProxyRevForConditionalGeneration(T5ProxyForConditionalGeneration):
+    def __init__(self, config: T5Config):
+        super().__init__(config)
+
+        # Perform pooling post encoder-head
+        self.encoder_head.reverse = True
