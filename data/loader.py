@@ -40,6 +40,10 @@ def load_nmt_data(dname: str = 'wmt16-en-de'):
         return load_iwslt201x(lang = 'de', year = '2016')
     if dname == 'iwslt2017':
         return load_iwslt2017(lang = 'de')
+    if dname == 'khresmoi-dev':
+        return load_khresmoi_dev(lang = 'de')
+    if dname == 'khresmoi-test':
+        return load_khresmoi_test(lang = 'de')
     
     raise ValueError("Invalid dataset name: {}".format(dname))
                        
@@ -199,3 +203,31 @@ def load_iwslt2017(lang: str = 'de'):
     dataset = load_dataset("iwslt2017", f"iwslt2017-en-{lang}")
     dataset = dataset['test']
     return format_wmt16(dataset, lang=lang)
+
+
+def load_khresmoi_dev(lang: str = 'de'):
+    """
+    Loads the Khresmoi Summary development dataset
+    """
+    path = "/rds/project/rds-8YSp2LXTlkY/data/nmt-khresmoi/khresmoi-summary-test-set-2.0"
+    with open(os.path.join(path, "khresmoi-summary-dev.en"), "r") as f:
+        src = f.readlines()
+    with open(os.path.join(path, "khresmoi-summary-dev.de"), "r") as f:
+        ref = f.readlines()
+    
+    output = format_newstest(src, ref)
+    return output
+
+
+def load_khresmoi_test(lang: str = 'de'):
+    """
+    Loads the Khresmoi Summary development dataset
+    """
+    path = "/rds/project/rds-8YSp2LXTlkY/data/nmt-khresmoi/khresmoi-summary-test-set-2.0"
+    with open(os.path.join(path, "khresmoi-summary-test.en"), "r") as f:
+        src = f.readlines()
+    with open(os.path.join(path, "khresmoi-summary-test.de"), "r") as f:
+        ref = f.readlines()
+    
+    output = format_newstest(src, ref)
+    return output

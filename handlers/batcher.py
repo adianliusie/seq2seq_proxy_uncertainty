@@ -26,7 +26,6 @@ class Batcher(object):
     def eval(self):
         self.evaluation = True
 
-
     def batches(self, data: List, numtokens: int, numsequences: int, shuffle: bool = False, return_last = False) ->  Iterator:
         """
         Splits the data into batches and returns them
