@@ -47,20 +47,12 @@ def smooth_rank_loss(input_scalars, target_scalars, param):
     return spearman_loss
 
 
-def encoder_mse(encoder_preds, teacher_encoder_preds, mask):
-    loss = (encoder_preds - teacher_encoder_preds) ** 2
-    loss = pw.functional.masked_mean_pooling(loss, mask, dim = 1)
-    loss = loss.mean()
-    return loss
-
-
 class DistillationProxyLoss(DistillationLoss):
     def __init__(self, args, model, tokenizer):
         super().__init__(args, model, tokenizer)
 
         # Set loss arguments 
         self.distillation_w = args.proxy_distillation_weight_start
-        self.encoder_w = args.proxy_encoder_weight
         self.set_scheduling(args)
 
         # Set model arguments
@@ -121,13 +113,6 @@ class DistillationProxyLoss(DistillationLoss):
             mask=mask
         )
 
-        # Encoder loss
-        enc = encoder_mse(
-            encoder_preds = self.model.escaler(output.encoder_last_hidden_state), 
-            teacher_encoder_preds = teacher_output.encoder_last_hidden_state,
-            mask = batch.attention_mask,
-        )
-
         # Ranking loss
         rl, spear = self.rank_loss(
             output = output,
@@ -145,7 +130,6 @@ class DistillationProxyLoss(DistillationLoss):
             'loss': -spear,
             'ce': ce.item(),
             'kl': kl.item(),
-            'enc': enc.item(),
             'acc': acc.sum(),
         }, batch_size = batch.output_numtokens)
 
@@ -159,7 +143,7 @@ class DistillationProxyLoss(DistillationLoss):
             'op-pad': batch.output_numpadding,
         }, batch_size = 1)
 
-        return rl + self.distillation_w * kl + self.encoder_w * enc
+        return rl + self.distillation_w * kl
 
     def set_scheduling(self, args):
         w_start, w_end = args.proxy_distillation_weight_start, args.proxy_distillation_weight_end

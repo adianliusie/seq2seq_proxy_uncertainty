@@ -79,9 +79,6 @@ class T5ProxyForConditionalGeneration(T5ForConditionalGeneration):
             intermediate_dim = config.d_ff,
         )
 
-        # Encoder scaler for supervision
-        self.escaler = nn.Linear(config.d_model, 1024)
-    
     def set_arguments(self, args):
         self.uargs = args
 
