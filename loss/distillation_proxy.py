@@ -123,7 +123,7 @@ class DistillationProxyLoss(DistillationLoss):
 
         # Encoder loss
         enc = encoder_mse(
-            encoder_preds = output.encoder_last_hidden_state, 
+            encoder_preds = self.model.escaler(output.encoder_last_hidden_state), 
             teacher_encoder_preds = teacher_output.encoder_last_hidden_state,
             mask = batch.attention_mask,
         )

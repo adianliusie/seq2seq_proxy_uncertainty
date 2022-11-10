@@ -18,11 +18,17 @@ def load_tokenizer(system: str) -> PreTrainedTokenizer:
         return T5TokenizerFast.from_pretrained("t5-large", model_max_length=512)
     elif system == 't5-xl': 
         return T5TokenizerFast.from_pretrained("t5-3b", model_max_length=512)
-    if system == 't5-small-proxy': 
+    elif system == 't5-small-proxy': 
         return T5TokenizerFast.from_pretrained("t5-small", model_max_length=512)
     elif system == 't5-base-proxy': 
         return T5TokenizerFast.from_pretrained("t5-base", model_max_length=512)
     elif system == 't5-large-proxy': 
+        return T5TokenizerFast.from_pretrained("t5-large", model_max_length=512)
+    elif system == 't5-small-proxy-rev': 
+        return T5TokenizerFast.from_pretrained("t5-small", model_max_length=512)
+    elif system == 't5-base-proxy-rev': 
+        return T5TokenizerFast.from_pretrained("t5-base", model_max_length=512)
+    elif system == 't5-large-proxy-rev': 
         return T5TokenizerFast.from_pretrained("t5-large", model_max_length=512)
                          
     raise ValueError("{} is invalid".format(system))
