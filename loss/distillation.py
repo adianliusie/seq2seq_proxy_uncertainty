@@ -88,12 +88,15 @@ class DistillationLoss(CrossEntropyLoss):
         mask = batch.label_ids != -100
 
         # Distillation loss
-        loss = kl_divergence_loss(
+        kl = kl_divergence_loss(
             input_logits=output.logits,
             target_logits=teacher_output.logits,
             temperature=self.temperature,
             mask=mask
         )
+
+        # Half CE half KL
+        loss = 0.50 * (kl + ce)
 
         # Token level accuracy
         x = (output.logits.argmax(dim = -1) == batch.label_ids)
@@ -104,7 +107,7 @@ class DistillationLoss(CrossEntropyLoss):
         self.record_metrics({
             'loss': loss.item(),
             'ce': ce.item(),
-            'kl': loss.item(),
+            'kl': kl.item(),
             'acc': acc.sum(),
         }, batch_size = batch.output_numtokens)
 
