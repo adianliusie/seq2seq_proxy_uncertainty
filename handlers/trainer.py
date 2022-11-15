@@ -1,4 +1,5 @@
 import os
+import math
 import logging
 import wandb
 import torch
@@ -48,16 +49,14 @@ class Trainer(object):
         logger.info("Building optimizer")
         optimizer = torch.optim.AdamW(
             self.model.parameters(), 
-            lr=args.lr,
+            lr = args.lr,
         )
         optimizer.zero_grad()
 
-        # We use a triangular finetuning schedule
+        # We use of a warmup + inverse root decay finetuning schedule
         def lr_lambda(step):
-            if step < args.num_warmup_steps:
-                return step / args.num_warmup_steps
-            return (args.num_steps - step) / (args.num_steps - args.num_warmup_steps)
-        
+            return min(step / args.num_warmup_steps, math.sqrt(args.num_warmup_steps / (step + 1)))
+
         # Setup scheduler
         logger.info("Building sheduler")
         scheduler = torch.optim.lr_scheduler.LambdaLR(
@@ -121,7 +120,7 @@ class Trainer(object):
             if step % (args.log_every * args.num_gradient_accum) == 0:
                 metrics = self.log_metrics(
                     mode = 'train', 
-                    step = (step + 1) // args.num_gradient_accum, 
+                    step = step // args.num_gradient_accum, 
                     lr = scheduler.get_last_lr()[0],
                 )
                 self.log_wandb(args, metrics, mode='train')
@@ -151,20 +150,19 @@ class Trainer(object):
         )
 
         # Save metrics for all the dataset
-        for batch in loader:
-            self.model_loss.eval_forward(batch)
+        self.model_loss.eval_forward(loader)
         
         # Record metrics
         metrics = self.log_metrics(mode = mode)
         self.log_wandb(args, metrics, mode = mode)
 
         # Save performance if best dev performance 
-        if metrics['bleu_free'] > self.best_metric[mode].get('bleu_free', 0):
+        if metrics['loss'] < self.best_metric[mode].get('loss', float('inf')):
             self.best_metric[mode] = metrics.copy()
-            self.save_model('best_bleu_free')
+            self.save_model()
         
         # Best dev performance so far
-        self.log_metrics(mode=f'best-{mode}', metrics=self.best_metric[mode])
+        self.log_metrics(mode = f'best-{mode}', metrics = self.best_metric[mode])
         self.save_model('final')
 
     def log_metrics(self, mode: str = 'train', step: int = None, lr: float = None, metrics = None):
@@ -221,7 +219,8 @@ class Trainer(object):
         args = load_json(path)
         return SimpleNamespace(**args)
     
-    def save_model(self, name='best'):
+    def save_model(self, name: Optional[str] = None):
+        name = name if name is not None else self.model_args.transformer
         # Get current model device
         device = next(self.model.parameters()).device
         

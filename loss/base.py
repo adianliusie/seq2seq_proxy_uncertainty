@@ -13,8 +13,7 @@ class BaseLoss(object):
         self.metrics = {}
 
     def reset_metrics(self):
-        for key in self.metrics:
-            self.metrics[key].reset()
+        self.metrics = {}
 
     def record_metrics(self, batch_metrics, batch_size = 1):
         for key, value in batch_metrics.items():

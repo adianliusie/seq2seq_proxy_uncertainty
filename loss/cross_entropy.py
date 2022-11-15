@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 from typing import Tuple
+from collections.abc import Iterator
 
 import torch
 import sacrebleu
@@ -55,62 +56,71 @@ class CrossEntropyLoss(BaseLoss):
         return loss
 
     @torch.no_grad()
-    def eval_forward(self, batch: SimpleNamespace) -> Tuple[float, dict]:
-        # Do standard forward pass
-        loss = self.forward(batch)
+    def eval_forward(self, loader: Iterator) -> Tuple[float, dict]:
+        
+        # Metrics to store
+        pairs = {'ref': [], 'prd': []}
 
-        # Set number of beams (hardcoded to 12)
+        # Hardcoded number of beams
         NUM_BEAMS = 4
 
-        # Generate teacher forcing prediction
-        force_output = self.model(
-            input_ids = batch.input_ids, 
-            attention_mask = batch.attention_mask, 
-            labels = batch.label_ids,
-        )
+        for batch in loader:
 
-        # Generate free running prediction
-        free_output = self.model.generate(
-            input_ids = batch.input_ids, 
-            attention_mask = batch.attention_mask, 
-            max_length = 256,
-            num_beams = NUM_BEAMS,
-            length_penalty = 0.6,
-            no_repeat_ngram_size = 5,
-            num_return_sequences = 1,
-            output_scores = True,
-            return_dict_in_generate = True,
-        )
+            # Generate teacher forcing prediction
+            output = self.model(
+                input_ids = batch.input_ids, 
+                attention_mask = batch.attention_mask, 
+                labels = batch.label_ids,
+            )
 
-        # Get text for teacher forcing predictions
-        force_ids = force_output.logits.argmax(dim = -1)
-        force_text = self.tokenizer.batch_decode(force_ids, skip_special_tokens=True)
+            # Cross entropy loss
+            loss = output.loss  
 
-        # Get text of best free running predictions
-        free_text = self.tokenizer.batch_decode(free_output.sequences, skip_special_tokens=True)
+            # Masking out all non-labels
+            mask = batch.label_ids != -100
 
-        for i, j in zip(free_text, batch.label_text):
-            print(i)
-            print(j)
-            print()
+            # Token level accuracy
+            x = (output.logits.argmax(dim = -1) == batch.label_ids)
 
-        print(len(free_text), len(batch.label_text), len(force_text))
-        # Corpus level bleu scoring for teacher-forcing
-        bleu_force = sacrebleu.corpus_bleu(
-            force_text,
-            batch.label_text,
+            # Masked Token level accuracy
+            acc = torch.masked_select(x, mask) 
+
+            # Generate free running prediction
+            free_output = self.model.generate(
+                input_ids = batch.input_ids, 
+                attention_mask = batch.attention_mask, 
+                max_length = 256,
+                num_beams = NUM_BEAMS,
+                length_penalty = 0.6,
+                no_repeat_ngram_size = 5,
+                num_return_sequences = 1,
+                output_scores = True,
+                return_dict_in_generate = True,
+            )
+
+            # Get the beam and decode
+            beams = free_output.sequences
+            texts = self.tokenizer.batch_decode(beams, skip_special_tokens=True)
+
+            # Store results for corpus level computation
+            pairs['ref'].extend(batch.label_text)
+            pairs['prd'].extend(texts)
+
+            # Record accuracy scores
+            self.record_metrics({
+                'acc': acc.sum() / mask.sum(),
+            }, batch_size = mask.sum())
+
+        # Corpus level scoring free-running
+        freescore = sacrebleu.corpus_bleu(
+            pairs['prd'],
+            [pairs['ref']],
         ).score
 
-        # Corpus level bleu scoring for free-running
-        bleu_free = sacrebleu.corpus_bleu(
-            free_text,
-            batch.label_text,
-        ).score
-
-        # Record Bleu scores
+        # Record accuracy scores
         self.record_metrics({
-            'bleu_force': bleu_force,
-            'bleu_free':  bleu_free,
-        }, batch_size = batch.output_numtokens)
+            'loss': -freescore,
+            'bleu': freescore,
+        }, batch_size = 1)
 
         return loss
