@@ -44,7 +44,15 @@ def load_nmt_data(dname: str = 'wmt16-en-de'):
         return load_khresmoi_dev(lang = 'de')
     if dname == 'khresmoi-test':
         return load_khresmoi_test(lang = 'de')
-    
+    if dname == 'mtnt2019':
+        return load_mtnt2019(lang = 'ja')
+    if dname == 'jesc':
+        return load_jesc(lang = 'ja')
+    if dname == 'kftt':
+        return load_kftt(lang = 'ja')
+    if dname == 'ted':
+        return load_ted(lang = 'ja')
+
     raise ValueError("Invalid dataset name: {}".format(dname))
                        
 
@@ -231,3 +239,57 @@ def load_khresmoi_test(lang: str = 'de'):
     
     output = format_newstest(src, ref)
     return output
+
+
+def load_enja(path_src: str, path_ref: str):
+    """
+    Loads generic en-ja data from file locally
+    """
+    path = "/home/yf286/rds/rds-altaslp-8YSp2LXTlkY/data/nmt-enja"
+    with open(os.path.join(path, path_src), "r") as f:
+        src = f.readlines()
+    with open(os.path.join(path, path_ref), "r") as f:
+        ref = f.readlines()
+
+    output = format_newstest(src, ref)
+    return output
+
+
+def load_mtnt2019(lang: str = 'ja'):
+    """
+    Loads mtnt-2019 en-ja data from file locally
+    """
+    return load_enja(
+        "mtnt2019.en-ja.final.en",
+        "mtnt2019.en-ja.final.ja",
+    )
+
+
+def load_jesc(lang: str = 'ja'):
+    """
+    Loads jesc en-ja data from file locally
+    """
+    return load_enja(
+        "test.jesc.en",
+        "test.jesc.ja",
+    )
+
+
+def load_kftt(lang: str = 'ja'):
+    """
+    Loads kftt en-ja data from file locally
+    """
+    return load_enja(
+        "test.kftt.en",
+        "test.kftt.ja",
+    )
+
+
+def load_ted(lang: str = 'ja'):
+    """
+    Loads ted en-ja data from file locally
+    """
+    return load_enja(
+        "test.ted.en",
+        "test.ted.ja",
+    )
