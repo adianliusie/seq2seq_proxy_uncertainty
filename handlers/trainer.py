@@ -159,12 +159,13 @@ class Trainer(object):
         self.log_wandb(args, metrics, mode = mode)
 
         # Save performance if best dev performance 
-        if metrics['loss'] < self.best_metric[mode].get('loss', float('inf')):
+        if metrics['bleu_free'] > self.best_metric[mode].get('bleu_free', 0):
             self.best_metric[mode] = metrics.copy()
-            self.save_model()
+            self.save_model('best_bleu_free')
         
         # Best dev performance so far
         self.log_metrics(mode=f'best-{mode}', metrics=self.best_metric[mode])
+        self.save_model('final')
 
     def log_metrics(self, mode: str = 'train', step: int = None, lr: float = None, metrics = None):
         if metrics is None:
@@ -220,7 +221,7 @@ class Trainer(object):
         args = load_json(path)
         return SimpleNamespace(**args)
     
-    def save_model(self):
+    def save_model(self, name='best'):
         # Get current model device
         device = next(self.model.parameters()).device
         
@@ -228,7 +229,7 @@ class Trainer(object):
         self.model.to("cpu")
 
         # Save path
-        path = os.path.join(self.exp_path, 'models', f'{self.model_args.transformer}.pt')
+        path = os.path.join(self.exp_path, 'models', '{}.pt'.format(name))
 
         # Save model dict
         torch.save(self.model.state_dict(), path)
